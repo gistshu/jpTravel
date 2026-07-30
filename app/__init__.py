@@ -1,0 +1,2 @@
+"""JP Travel application package."""
+

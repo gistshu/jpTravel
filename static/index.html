@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>日本城堡地圖</title>
+    <link
+      rel="stylesheet"
+      href="/static/vendor/leaflet/leaflet.css?v=1"
+    >
+    <link rel="stylesheet" href="/static/styles.css?v=14">
+  </head>
+  <body>
+    <main class="map-shell" aria-label="日本城堡地圖">
+      <header class="map-header">
+        <div class="map-title">
+          <h1>日本城堡地圖</h1>
+          <div id="castle-count" class="castle-count">載入中</div>
+        </div>
+        <div id="auth-panel" class="auth-panel">
+          <span id="auth-name" class="auth-name">確認登入狀態</span>
+          <a id="login-link" class="auth-button" href="/api/v1/auth/google/login">
+            Google 登入
+          </a>
+          <button id="logout-button" class="auth-button" type="button" hidden>
+            登出
+          </button>
+        </div>
+      </header>
+      <aside class="map-controls" aria-label="地圖顯示控制">
+        <button
+          id="toggle-castle-labels"
+          class="map-control-button is-active"
+          type="button"
+        >
+          城堡名稱
+        </button>
+        <button
+          id="toggle-visited-markers"
+          class="map-control-button is-active"
+          type="button"
+        >
+          隱藏未去過
+        </button>
+        <button
+          id="toggle-activity-panel"
+          class="map-control-button"
+          type="button"
+        >
+          最新更新
+        </button>
+        <button
+          id="toggle-popular-panel"
+          class="map-control-button"
+          type="button"
+        >
+          熱門城堡
+        </button>
+        <button
+          id="toggle-my-records-panel"
+          class="map-control-button"
+          type="button"
+        >
+          我的紀錄
+        </button>
+        <button
+          id="toggle-account-ranking-panel"
+          class="map-control-button"
+          type="button"
+        >
+          最強大名
+        </button>
+      </aside>
+      <section class="popularity-legend" aria-label="熱門程度圖例">
+        <h2>熱門程度</h2>
+        <ol id="popularity-legend-list" class="popularity-legend-list"></ol>
+      </section>
+      <section id="activity-panel" class="activity-panel" hidden>
+        <div class="activity-panel-header">
+          <h2>最新更新</h2>
+          <button
+            id="refresh-activity"
+            class="activity-refresh"
+            type="button"
+            aria-label="重新整理最新更新"
+            title="重新整理"
+          >
+            ↻
+          </button>
+        </div>
+        <ol id="activity-list" class="activity-list"></ol>
+        <div id="activity-empty" class="activity-empty">尚無更新紀錄</div>
+      </section>
+      <section id="popular-panel" class="side-list-panel" hidden>
+        <div class="activity-panel-header">
+          <h2>熱門城堡</h2>
+        </div>
+        <ol id="popular-list" class="popular-list"></ol>
+      </section>
+      <section id="my-records-panel" class="side-list-panel" hidden>
+        <div class="activity-panel-header">
+          <h2>我的紀錄</h2>
+        </div>
+        <ol id="my-records-list" class="popular-list"></ol>
+        <div id="my-records-empty" class="activity-empty">尚無手帳紀錄</div>
+      </section>
+      <section
+        id="account-ranking-panel"
+        class="account-ranking-panel"
+        aria-label="最強大名"
+        hidden
+      >
+        <div class="ranking-panel-header">
+          <h2>最強大名</h2>
+          <button
+            id="close-account-ranking"
+            class="activity-refresh"
+            type="button"
+            aria-label="關閉帳號排名"
+            title="關閉"
+          >
+            ×
+          </button>
+        </div>
+        <ol id="account-ranking-list" class="account-ranking-list"></ol>
+        <div id="account-ranking-empty" class="activity-empty">尚無排名資料</div>
+      </section>
+      <section
+        id="samurai-rank-legend"
+        class="samurai-rank-legend"
+        aria-label="武士階級區間"
+      >
+        <h2>武士階級</h2>
+        <ol id="samurai-rank-legend-list" class="samurai-rank-legend-list"></ol>
+      </section>
+      <section id="account-view-banner" class="account-view-banner" hidden>
+        <span id="account-view-label"></span>
+        <button
+          id="close-account-view"
+          class="account-view-close"
+          type="button"
+          aria-label="回到我的地圖"
+          title="回到我的地圖"
+        >
+          ×
+        </button>
+      </section>
+      <div id="map" class="map-canvas"></div>
+    </main>
+    <script
+      src="/static/vendor/leaflet/leaflet.js?v=1"
+    ></script>
+    <script src="/static/map.js?v=20"></script>
+  </body>
+</html>
