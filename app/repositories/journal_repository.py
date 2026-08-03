@@ -40,6 +40,7 @@ class JournalRepository:
         visited: bool,
         travel_date: date,
         journal_text: str,
+        image_urls_json: str = "[]",
     ) -> CastleJournal:
         """Create or update one castle journal."""
         journal = self.get_by_user_castle_and_date(
@@ -54,6 +55,7 @@ class JournalRepository:
                 visited=visited,
                 travel_date=travel_date,
                 journal_text=journal_text,
+                image_urls_json=image_urls_json,
             )
             self.db_session.add(journal)
             self.db_session.flush()
@@ -62,6 +64,7 @@ class JournalRepository:
         journal.visited = visited
         journal.travel_date = travel_date
         journal.journal_text = journal_text
+        journal.image_urls_json = image_urls_json
         return journal
 
     def list_latest_updates(

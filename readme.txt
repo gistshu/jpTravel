@@ -5,6 +5,8 @@
 # 百名城網站
 # https://www2.tocoo.jp/must-visit/fine-castles.php?cc=cn
 # 維基百科 https://zh.wikipedia.org/wiki/日本100名城
+# 日本100名城 https://www.100finecastles.com
+# 某人的 日本100名城 網站 https://oshirojp.com/News/Index
 
 # 開源地圖
 # https://github.com/umap-project/umap
@@ -16,6 +18,8 @@
 # 讀取README.MD了解專案
 # 將今天的對話摘要到 README.MD
 
+uvicorn app.main:app --port 8000
+http://127.0.0.1:8000
 
 以下為基礎需求
 

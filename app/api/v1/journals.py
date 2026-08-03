@@ -1,10 +1,13 @@
+import json
+from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.database import get_db_session
+from app.core.exceptions import ValidationError
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.journal import (
@@ -13,8 +16,8 @@ from app.schemas.journal import (
     JournalActivityRead,
     JournalRead,
     JournalRecordRead,
-    JournalUpdate,
 )
+from app.services.journal_image_service import build_journal_image_urls
 from app.services.journal_service import JournalService
 
 router = APIRouter(prefix="/me/journals", tags=["journals"])
@@ -122,19 +125,34 @@ def list_my_journals(
     response_model=ApiResponse[JournalRead],
     status_code=status.HTTP_200_OK,
 )
-def update_my_journal(
+async def update_my_journal(
     castle_id: Annotated[int, Path(ge=1)],
-    payload: JournalUpdate,
+    visited: Annotated[bool, Form()],
+    travel_date: Annotated[date, Form()],
     current_user: Annotated[User, Depends(get_current_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
+    journal_text: Annotated[str, Form(max_length=5000)] = "",
+    existing_image_urls: Annotated[str, Form()] = "[]",
+    images: Annotated[list[UploadFile] | None, File()] = None,
 ) -> ApiResponse[JournalRead]:
     """Update current user's journal for one castle."""
+    try:
+        parsed_existing_urls = json.loads(existing_image_urls)
+    except json.JSONDecodeError as exc:
+        raise ValidationError("圖片資料格式錯誤") from exc
+    if not isinstance(parsed_existing_urls, list) or not all(
+        isinstance(item, str) for item in parsed_existing_urls
+    ):
+        raise ValidationError("圖片資料格式錯誤")
+
+    image_urls = await build_journal_image_urls(parsed_existing_urls, images or [])
     journal = JournalService(db_session).update_my_journal(
         user=current_user,
         castle_id=castle_id,
-        visited=payload.visited,
-        travel_date=payload.travel_date,
-        journal_text=payload.journal_text,
+        visited=visited,
+        travel_date=travel_date,
+        journal_text=journal_text,
+        image_urls=image_urls,
     )
     return ApiResponse(
         success=True,

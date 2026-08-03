@@ -61,6 +61,9 @@ def test_castles_api_returns_markers() -> None:
             "longitude": 140.756831,
             "image_url": None,
             "wikipedia_url": "https://zh.wikipedia.org/wiki/%E4%BA%94%E7%A8%9C%E9%83%AD",
+            "official_url": None,
             "journal_count": 0,
+            "castle_number": None,
+            "castle_series": "other",
         }
     ]

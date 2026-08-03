@@ -50,6 +50,8 @@ class CastleRepository:
             existing_castle.latitude = castle.latitude
             existing_castle.longitude = castle.longitude
             existing_castle.image_url = castle.image_url
+            existing_castle.castle_number = castle.castle_number
+            existing_castle.castle_series = castle.castle_series
             affected_count += 1
         return affected_count
 

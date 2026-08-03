@@ -25,3 +25,14 @@ class Castle(TimestampMixin, AuditMixin, Base):
     longitude: Mapped[float] = mapped_column(Float, nullable=False, index=True)
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     source_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    castle_number: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
+    castle_series: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="other",
+        index=True,
+    )

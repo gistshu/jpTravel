@@ -13,6 +13,7 @@ from app.schemas.journal import (
     JournalRead,
     JournalRecordRead,
 )
+from app.services.journal_image_service import dump_image_urls, parse_image_urls
 
 SAMURAI_TITLES = [
     "浪人",
@@ -48,6 +49,7 @@ class JournalService:
                 visited=journal.visited,
                 travel_date=journal.travel_date,
                 journal_text=journal.journal_text,
+                image_urls=parse_image_urls(journal.image_urls_json),
             )
             for journal in journals
         ]
@@ -59,6 +61,7 @@ class JournalService:
         visited: bool,
         travel_date: date,
         journal_text: str,
+        image_urls: list[str],
     ) -> JournalRead:
         """Update the current user's journal for one castle."""
         castle = self.castle_repository.get_by_id(castle_id)
@@ -71,6 +74,7 @@ class JournalService:
             visited=visited,
             travel_date=travel_date,
             journal_text=journal_text.strip(),
+            image_urls_json=dump_image_urls(image_urls),
         )
         self.db_session.commit()
         return JournalRead(
@@ -78,6 +82,7 @@ class JournalService:
             visited=journal.visited,
             travel_date=journal.travel_date,
             journal_text=journal.journal_text,
+            image_urls=parse_image_urls(journal.image_urls_json),
         )
 
     def list_latest_updates(self, limit: int) -> list[JournalActivityRead]:
@@ -90,6 +95,7 @@ class JournalService:
                 castle_name=castle.name,
                 travel_date=journal.travel_date,
                 journal_text=journal.journal_text,
+                image_urls=parse_image_urls(journal.image_urls_json),
                 updated_at=journal.updated_at.isoformat(),
             )
             for journal, user, castle in updates
@@ -111,6 +117,7 @@ class JournalService:
                 user_display_name=user.display_name,
                 travel_date=journal.travel_date,
                 journal_text=journal.journal_text,
+                image_urls=parse_image_urls(journal.image_urls_json),
                 updated_at=journal.updated_at.isoformat(),
             )
             for journal, user in records
@@ -147,6 +154,7 @@ class JournalService:
                 user_display_name=user.display_name,
                 travel_date=journal.travel_date,
                 journal_text=journal.journal_text,
+                image_urls=parse_image_urls(journal.image_urls_json),
                 updated_at=journal.updated_at.isoformat(),
             )
             for journal in records

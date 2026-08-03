@@ -10,14 +10,7 @@ class JournalRead(BaseModel):
     visited: bool
     travel_date: date
     journal_text: str
-
-
-class JournalUpdate(BaseModel):
-    """Payload for updating a castle journal."""
-
-    visited: bool
-    travel_date: date
-    journal_text: str = Field(default="", max_length=5000)
+    image_urls: list[str] = Field(default_factory=list)
 
 
 class JournalActivityRead(BaseModel):
@@ -28,6 +21,7 @@ class JournalActivityRead(BaseModel):
     castle_name: str
     travel_date: date
     journal_text: str
+    image_urls: list[str] = Field(default_factory=list)
     updated_at: str
 
 
@@ -37,6 +31,7 @@ class JournalRecordRead(BaseModel):
     user_display_name: str
     travel_date: date
     journal_text: str
+    image_urls: list[str] = Field(default_factory=list)
     updated_at: str
 
 
@@ -48,6 +43,7 @@ class AccountJournalRead(BaseModel):
     user_display_name: str
     travel_date: date
     journal_text: str
+    image_urls: list[str] = Field(default_factory=list)
     updated_at: str
 
 

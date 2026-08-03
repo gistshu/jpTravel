@@ -26,7 +26,10 @@ class CastleService:
                 longitude=castle.longitude,
                 image_url=castle.image_url,
                 wikipedia_url=_build_wikipedia_url(castle.name),
+                official_url=_build_official_url(castle.source_url),
                 journal_count=journal_counts.get(castle.id, 0),
+                castle_number=castle.castle_number,
+                castle_series=castle.castle_series,
             )
             for castle in castles
         ]
@@ -34,3 +37,9 @@ class CastleService:
 
 def _build_wikipedia_url(castle_name: str) -> str:
     return f"https://zh.wikipedia.org/wiki/{quote(castle_name)}"
+
+
+def _build_official_url(source_url: str) -> str | None:
+    if source_url.startswith("https://www.100finecastles.com/"):
+        return source_url
+    return None

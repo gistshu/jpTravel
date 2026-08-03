@@ -10,4 +10,4 @@ venv/
 *.sqlite3
 *.db
 uploads/
-
+static/uploads/

@@ -41,6 +41,7 @@ class CastleJournal(TimestampMixin, AuditMixin, Base):
     visited: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     travel_date: Mapped[date] = mapped_column(Date, nullable=False)
     journal_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    image_urls_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     style: Mapped[str] = mapped_column(String(32), nullable=False, default="notebook")
 
     user = relationship("User")
