@@ -8,6 +8,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from app.core.exceptions import ValidationError
 
 MAX_JOURNAL_IMAGES = 5
+MAX_RECOMMENDATION_IMAGES = 3
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_STORED_IMAGE_BYTES = 1024 * 1024
 MAX_IMAGE_SIDE = 1600
@@ -38,6 +39,7 @@ def dump_image_urls(image_urls: list[str]) -> str:
 async def build_journal_image_urls(
     existing_image_urls: list[str],
     uploads: list[UploadFile],
+    max_images: int = MAX_JOURNAL_IMAGES,
 ) -> list[str]:
     """Compress uploaded journal images and return the full stored URL list."""
     cleaned_existing_urls = [
@@ -47,8 +49,8 @@ async def build_journal_image_urls(
     ]
     real_uploads = [upload for upload in uploads if upload.filename]
 
-    if len(cleaned_existing_urls) + len(real_uploads) > MAX_JOURNAL_IMAGES:
-        raise ValidationError(f"手帳圖片最多 {MAX_JOURNAL_IMAGES} 張")
+    if len(cleaned_existing_urls) + len(real_uploads) > max_images:
+        raise ValidationError(f"圖片最多 {max_images} 張")
 
     saved_urls = []
     for upload in real_uploads:

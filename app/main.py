@@ -41,6 +41,10 @@ def create_app() -> FastAPI:
     def get_homepage() -> FileResponse:
         return FileResponse("static/index.html")
 
+    @application.get("/castles/{castle_id}/journals", include_in_schema=False)
+    def get_castle_journals_page(castle_id: int) -> FileResponse:
+        return FileResponse("static/castle_journals.html")
+
     return application
 
 

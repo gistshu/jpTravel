@@ -13,15 +13,38 @@ from app.schemas.common import ApiResponse
 from app.schemas.journal import (
     AccountJournalRead,
     AccountRankingRead,
+    CastleJournalCollectionRead,
     JournalActivityRead,
     JournalRead,
     JournalRecordRead,
+    JournalStatsRead,
 )
-from app.services.journal_image_service import build_journal_image_urls
+from app.services.journal_image_service import (
+    MAX_RECOMMENDATION_IMAGES,
+    build_journal_image_urls,
+)
 from app.services.journal_service import JournalService
 
 router = APIRouter(prefix="/me/journals", tags=["journals"])
 public_router = APIRouter(prefix="/journals", tags=["journals"])
+
+
+@public_router.get(
+    "/stats",
+    response_model=ApiResponse[JournalStatsRead],
+    status_code=status.HTTP_200_OK,
+)
+def get_journal_stats(
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> ApiResponse[JournalStatsRead]:
+    """Return public aggregate journal statistics."""
+    stats = JournalService(db_session).get_public_stats()
+    return ApiResponse(
+        success=True,
+        message="查詢成功",
+        data=stats,
+        errors=[],
+    )
 
 
 @public_router.get(
@@ -59,6 +82,25 @@ def list_latest_castle_journals(
         success=True,
         message="查詢成功",
         data=records,
+        errors=[],
+    )
+
+
+@public_router.get(
+    "/castles/{castle_id}",
+    response_model=ApiResponse[CastleJournalCollectionRead],
+    status_code=status.HTTP_200_OK,
+)
+def list_castle_journals(
+    castle_id: Annotated[int, Path(ge=1)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> ApiResponse[CastleJournalCollectionRead]:
+    """Return one castle with all public journal records."""
+    collection = JournalService(db_session).list_all_by_castle(castle_id)
+    return ApiResponse(
+        success=True,
+        message="查詢成功",
+        data=collection,
         errors=[],
     )
 
@@ -133,7 +175,10 @@ async def update_my_journal(
     db_session: Annotated[Session, Depends(get_db_session)],
     journal_text: Annotated[str, Form(max_length=5000)] = "",
     existing_image_urls: Annotated[str, Form()] = "[]",
+    recommendations_json: Annotated[str, Form()] = "[]",
+    recommendation_image_indexes: Annotated[list[int] | None, Form()] = None,
     images: Annotated[list[UploadFile] | None, File()] = None,
+    recommendation_images: Annotated[list[UploadFile] | None, File()] = None,
 ) -> ApiResponse[JournalRead]:
     """Update current user's journal for one castle."""
     try:
@@ -144,8 +189,54 @@ async def update_my_journal(
         isinstance(item, str) for item in parsed_existing_urls
     ):
         raise ValidationError("圖片資料格式錯誤")
+    try:
+        parsed_recommendations = json.loads(recommendations_json)
+    except json.JSONDecodeError as exc:
+        raise ValidationError("推薦資料格式錯誤") from exc
+    if not isinstance(parsed_recommendations, list):
+        raise ValidationError("推薦資料格式錯誤")
+    recommendations = []
+    for item in parsed_recommendations:
+        if not isinstance(item, dict):
+            raise ValidationError("推薦資料格式錯誤")
+        recommendations.append(
+            {
+                "name": item.get("name"),
+                "category": item.get("category"),
+                "description": item.get("description"),
+                "google_maps_url": item.get("google_maps_url"),
+                "address": item.get("address"),
+                "latitude": item.get("latitude"),
+                "longitude": item.get("longitude"),
+                "osm_type": item.get("osm_type"),
+                "osm_id": item.get("osm_id"),
+                "osm_url": item.get("osm_url"),
+                "rating": item.get("rating"),
+                "existing_image_urls": item.get("existing_image_urls"),
+            },
+        )
 
     image_urls = await build_journal_image_urls(parsed_existing_urls, images or [])
+    recommendation_uploads_by_index: dict[int, list[UploadFile]] = {}
+    recommendation_indexes = recommendation_image_indexes or []
+    recommendation_uploads = recommendation_images or []
+    if len(recommendation_indexes) != len(recommendation_uploads):
+        raise ValidationError("推薦圖片資料格式錯誤")
+    for index, upload in zip(
+        recommendation_indexes,
+        recommendation_uploads,
+        strict=True,
+    ):
+        recommendation_uploads_by_index.setdefault(index, []).append(upload)
+    for index, recommendation in enumerate(recommendations):
+        existing_urls = recommendation.get("existing_image_urls")
+        if not isinstance(existing_urls, list):
+            existing_urls = []
+        recommendation["image_urls"] = await build_journal_image_urls(
+            [item for item in existing_urls if isinstance(item, str)],
+            recommendation_uploads_by_index.get(index, []),
+            max_images=MAX_RECOMMENDATION_IMAGES,
+        )
     journal = JournalService(db_session).update_my_journal(
         user=current_user,
         castle_id=castle_id,
@@ -153,6 +244,7 @@ async def update_my_journal(
         travel_date=travel_date,
         journal_text=journal_text,
         image_urls=image_urls,
+        recommendations=recommendations,
     )
     return ApiResponse(
         success=True,

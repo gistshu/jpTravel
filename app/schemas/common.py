@@ -1,8 +1,4 @@
-from typing import Generic, TypeVar
-
 from pydantic import BaseModel, Field
-
-ResponseData = TypeVar("ResponseData")
 
 
 class ErrorItem(BaseModel):
@@ -13,7 +9,7 @@ class ErrorItem(BaseModel):
     field: str | None = Field(default=None, max_length=128)
 
 
-class ApiResponse(BaseModel, Generic[ResponseData]):
+class ApiResponse[ResponseData](BaseModel):
     """Unified API response body."""
 
     success: bool
@@ -31,9 +27,8 @@ class Pagination(BaseModel):
     total_pages: int = Field(ge=0)
 
 
-class PaginatedItems(BaseModel, Generic[ResponseData]):
+class PaginatedItems[ResponseData](BaseModel):
     """Paginated list wrapper."""
 
     items: list[ResponseData]
     pagination: Pagination
-

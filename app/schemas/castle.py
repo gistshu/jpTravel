@@ -16,3 +16,17 @@ class CastleRead(BaseModel):
     journal_count: int = Field(ge=0)
     castle_number: int | None = Field(default=None, ge=1, le=200)
     castle_series: str = Field(default="other", max_length=32)
+
+
+class NearbyPlaceRead(BaseModel):
+    """Nearby place returned from OpenStreetMap POI lookup."""
+
+    name: str = Field(min_length=1, max_length=120)
+    category: str = Field(default="other", max_length=32)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    distance_meters: int = Field(ge=0)
+    address: str = Field(default="", max_length=255)
+    osm_type: str = Field(min_length=1, max_length=16)
+    osm_id: str = Field(min_length=1, max_length=32)
+    osm_url: str = Field(min_length=1, max_length=500)

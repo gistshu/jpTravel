@@ -8,7 +8,7 @@
       rel="stylesheet"
       href="/static/vendor/leaflet/leaflet.css?v=1"
     >
-    <link rel="stylesheet" href="/static/styles.css?v=26">
+    <link rel="stylesheet" href="/static/styles.css?v=54">
   </head>
   <body>
     <main class="map-shell" aria-label="日本城堡地圖">
@@ -17,15 +17,34 @@
           <h1>日本城堡地圖 (100+續)</h1>
           <div id="castle-count" class="castle-count" hidden></div>
         </div>
-        <div id="auth-panel" class="auth-panel">
-          <span id="auth-rank-badge" class="auth-rank-badge" hidden></span>
-          <span id="auth-name" class="auth-name">確認登入狀態</span>
-          <a id="login-link" class="auth-button" href="/api/v1/auth/google/login">
-            Google 登入
-          </a>
-          <button id="logout-button" class="auth-button" type="button" hidden>
-            登出
+        <div class="map-header-actions">
+          <div id="auth-panel" class="auth-panel">
+            <span id="auth-rank-badge" class="auth-rank-badge" hidden></span>
+            <span id="auth-name" class="auth-name">確認登入狀態</span>
+            <a id="login-link" class="auth-button" href="/api/v1/auth/google/login">
+              Google 登入
+            </a>
+            <button id="logout-button" class="auth-button" type="button" hidden>
+              登出
+            </button>
+          </div>
+          <button
+            id="toggle-left-tool-drawer"
+            class="drawer-toggle"
+            type="button"
+            aria-expanded="false"
+          >
+            選單
           </button>
+          <button
+            id="toggle-right-rank-drawer"
+            class="drawer-toggle"
+            type="button"
+            aria-expanded="false"
+          >
+            階級
+          </button>
+          <span id="journal-stats" class="journal-stats">筆記統計載入中</span>
         </div>
       </header>
       <aside
@@ -33,14 +52,6 @@
         class="map-drawer map-drawer-left is-collapsed"
         aria-label="地圖工具與熱門程度"
       >
-        <button
-          id="toggle-left-tool-drawer"
-          class="drawer-toggle"
-          type="button"
-          aria-expanded="false"
-        >
-          工具
-        </button>
         <div class="drawer-content">
           <div class="map-controls" aria-label="地圖顯示控制">
             <button
@@ -51,11 +62,32 @@
               城堡名稱
             </button>
             <button
-              id="toggle-visited-markers"
+              id="toggle-railway-layer"
+              class="map-control-button"
+              type="button"
+            >
+              鐵道圖層
+            </button>
+            <button
+              id="toggle-region-colors"
               class="map-control-button is-active"
               type="button"
             >
+              地方區域
+            </button>
+            <button
+              id="toggle-visited-markers"
+              class="map-control-button"
+              type="button"
+            >
               隱藏未去過
+            </button>
+            <button
+              id="toggle-popularity-legend"
+              class="map-control-button"
+              type="button"
+            >
+              熱門標籤
             </button>
             <button
               id="toggle-activity-panel"
@@ -93,7 +125,12 @@
               顯示城堡：全部
             </button>
           </div>
-          <section class="popularity-legend" aria-label="熱門程度圖例">
+          <section
+            id="popularity-legend"
+            class="popularity-legend"
+            aria-label="熱門程度圖例"
+            hidden
+          >
             <h2>熱門程度</h2>
             <ol id="popularity-legend-list" class="popularity-legend-list"></ol>
           </section>
@@ -111,6 +148,15 @@
           >
             ↻
           </button>
+          <button
+            id="close-activity-panel"
+            class="activity-refresh"
+            type="button"
+            aria-label="關閉最新更新"
+            title="關閉"
+          >
+            ×
+          </button>
         </div>
         <ol id="activity-list" class="activity-list"></ol>
         <div id="activity-empty" class="activity-empty">尚無更新紀錄</div>
@@ -118,32 +164,50 @@
       <section id="popular-panel" class="side-list-panel" hidden>
         <div class="activity-panel-header">
           <h2>熱門城堡</h2>
+          <button
+            id="close-popular-panel"
+            class="activity-refresh"
+            type="button"
+            aria-label="關閉熱門城堡"
+            title="關閉"
+          >
+            ×
+          </button>
         </div>
         <ol id="popular-list" class="popular-list"></ol>
       </section>
       <section id="my-records-panel" class="side-list-panel" hidden>
         <div class="activity-panel-header">
           <h2>我的紀錄</h2>
+          <button
+            id="close-my-records-panel"
+            class="activity-refresh"
+            type="button"
+            aria-label="關閉我的紀錄"
+            title="關閉"
+          >
+            ×
+          </button>
         </div>
         <ol id="my-records-list" class="popular-list"></ol>
-        <div id="my-records-empty" class="activity-empty">尚無手帳紀錄</div>
+        <div id="my-records-empty" class="activity-empty">尚無筆記紀錄</div>
       </section>
       <section
         id="journal-side-panel"
         class="journal-side-panel"
-        aria-label="手帳紀錄"
+        aria-label="筆記紀錄"
         hidden
       >
         <div class="journal-side-panel-header">
           <div>
-            <h2 id="journal-side-title">手帳紀錄</h2>
+            <h2 id="journal-side-title">筆記紀錄</h2>
             <span id="journal-side-subtitle"></span>
           </div>
           <button
             id="close-journal-side-panel"
             class="activity-refresh"
             type="button"
-            aria-label="關閉手帳紀錄"
+            aria-label="關閉筆記紀錄"
             title="關閉"
           >
             ×
@@ -177,14 +241,6 @@
         class="map-drawer map-drawer-right is-collapsed"
         aria-label="武士階級"
       >
-        <button
-          id="toggle-right-rank-drawer"
-          class="drawer-toggle"
-          type="button"
-          aria-expanded="false"
-        >
-          階級
-        </button>
         <section
           id="samurai-rank-legend"
           class="samurai-rank-legend drawer-content"
@@ -206,6 +262,29 @@
           ×
         </button>
       </section>
+      <aside
+        id="account-prefecture-legend"
+        class="account-prefecture-legend"
+        aria-label="縣別完成率色階"
+        hidden
+      >
+        <div class="account-prefecture-legend-header">
+          <h2>縣別完成率</h2>
+          <button
+            id="close-account-prefecture-legend"
+            class="activity-refresh"
+            type="button"
+            aria-label="關閉縣別完成率色階"
+            title="關閉"
+          >
+            ×
+          </button>
+        </div>
+        <ol
+          id="account-prefecture-legend-list"
+          class="account-prefecture-legend-list"
+        ></ol>
+      </aside>
       <footer class="site-footer-links" aria-label="網站資訊">
         <button
           class="site-footer-link"
@@ -245,7 +324,7 @@
           <h2 id="site-info-title" class="site-info-heading">參考網站</h2>
           <article id="site-info-references" class="site-info-content">
             <p>
-              本網站整理日本 100 名城與續日本 100 名城相關資訊，提供免費查詢、標記與手帳紀錄功能。本站無盈利模式，不收取費用，也不以廣告或資料販售獲利。
+              本網站整理日本 100 名城與續日本 100 名城相關資訊，提供免費查詢、標記與筆記紀錄功能。本站無盈利模式，不收取費用，也不以廣告或資料販售獲利。
             </p>
             <ul>
               <li>
@@ -265,12 +344,16 @@
                 <span>使用內容：地圖底圖與地理瀏覽介面。</span>
               </li>
               <li>
+                <a href="https://www.openrailwaymap.org/" target="_blank" rel="noopener noreferrer">OpenRailwayMap</a>
+                <span>使用內容：主地圖可選擇疊加鐵道路線與車站圖層。</span>
+              </li>
+              <li>
                 <a href="https://github.com/dataofjapan/land" target="_blank" rel="noopener noreferrer">JapanPrefGeoJson</a>
                 <span>使用內容：日本行政區 GeoJSON 邊界資料，用於地圖上的縣市區域顯示。</span>
               </li>
               <li>
                 <a href="https://developers.google.com/identity/protocols/oauth2" target="_blank" rel="noopener noreferrer">Google OAuth</a>
-                <span>使用內容：提供 Google 登入驗證，讓使用者可保存自己的城堡造訪與手帳紀錄。</span>
+                <span>使用內容：提供 Google 登入驗證，讓使用者可保存自己的城堡造訪與筆記紀錄。</span>
               </li>
             </ul>
             <p>
@@ -284,20 +367,20 @@
             <h3>資料收集</h3>
             <ul>
               <li>當使用者透過 Google 登入時，本站會接收 Google 提供的基本帳號識別資訊，例如 Google 帳號識別碼、顯示名稱與電子郵件，用於建立與辨識本站帳號。</li>
-              <li>使用者在本站建立的資料包含城堡造訪狀態、旅遊日期、手帳文字、上傳圖片與更新時間。</li>
+              <li>使用者在本站建立的資料包含城堡造訪狀態、旅遊日期、筆記文字、上傳圖片與更新時間。</li>
               <li>本站可能使用必要的登入工作階段 cookie，以維持登入狀態與基本服務運作。</li>
             </ul>
             <h3>資料使用目的</h3>
             <ul>
-              <li>提供登入、登出、個人城堡紀錄、手帳編輯、圖片上傳與排名顯示等功能。</li>
-              <li>在「最新更新」「熱門城堡」「最強大名」等功能中顯示公開性紀錄摘要，例如顯示名稱、城堡名稱、旅遊日期與手帳內容。</li>
+              <li>提供登入、登出、個人城堡紀錄、筆記編輯、圖片上傳與排名顯示等功能。</li>
+              <li>在「最新更新」「熱門城堡」「最強大名」等功能中顯示公開性紀錄摘要，例如顯示名稱、城堡名稱、旅遊日期與筆記內容。</li>
               <li>維護網站穩定性、排查錯誤與改善使用體驗。</li>
             </ul>
             <h3>資料保存與分享</h3>
             <ul>
               <li>本站不會將使用者個人資料出售、出租或交換給第三方。</li>
               <li>除依法令要求、保護網站安全或完成使用者明確要求外，本站不會主動向第三方揭露個人資料。</li>
-              <li>使用者上傳圖片與手帳內容可能因公開列表、城堡紀錄或帳號紀錄功能而被其他使用者瀏覽，請避免填寫敏感個人資訊。</li>
+              <li>使用者上傳圖片與筆記內容可能因公開列表、城堡紀錄或帳號紀錄功能而被其他使用者瀏覽，請避免填寫敏感個人資訊。</li>
             </ul>
             <h3>Google 登入</h3>
             <ul>
@@ -306,8 +389,8 @@
             </ul>
             <h3>使用者選擇</h3>
             <ul>
-              <li>使用者可選擇不登入，此時仍可瀏覽地圖與公開資料，但無法保存個人手帳。</li>
-              <li>使用者可自行編輯手帳內容與圖片；如需刪除帳號或完整移除資料，請透過網站維護者提供的聯絡方式提出。</li>
+              <li>使用者可選擇不登入，此時仍可瀏覽地圖與公開資料，但無法保存個人筆記。</li>
+              <li>使用者可自行編輯筆記內容與圖片；如需刪除帳號或完整移除資料，請透過網站維護者提供的聯絡方式提出。</li>
             </ul>
             <p>
               本條款可能依網站功能調整而更新。繼續使用本網站，即表示理解並同意本隱私條款所述之資料處理方式。
@@ -320,6 +403,6 @@
     <script
       src="/static/vendor/leaflet/leaflet.js?v=1"
     ></script>
-    <script src="/static/map.js?v=33"></script>
+    <script src="/static/map.js?v=67"></script>
   </body>
 </html>

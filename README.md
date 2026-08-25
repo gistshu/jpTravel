@@ -1,6 +1,6 @@
 # JP Travel
 
-日本城堡旅遊紀錄網站。首頁以日本行政區地圖呈現城堡位置，使用者可透過 Google 登入標記去過的城堡、依旅遊日期撰寫手帳，並瀏覽熱門城堡與最新手帳紀錄。
+日本城堡旅遊紀錄網站。首頁以日本行政區地圖呈現城堡位置，使用者可透過 Google 登入標記去過的城堡、依旅遊日期撰寫筆記，並瀏覽熱門城堡與最新筆記紀錄。
 
 ## 技術選型
 
@@ -11,12 +11,13 @@
 - RESTful JSON API
 - pytest
 - Leaflet
-- OpenStreetMap / JapanPrefGeoJson 行政區資料
+- OpenStreetMap / OpenRailwayMap / JapanPrefGeoJson 行政區資料
 
 ## 目前功能
 
 - 首頁顯示日本區域地圖，預設以大阪城為中心。
 - 地圖限制在日本周邊區域拖曳。
+- 主地圖可切換 OpenRailwayMap 鐵道路線與車站圖層，預設關閉，需要時才載入。
 - 城堡座標、地址、縣市目前整合 ToCoo 與 100finecastles 官方 100/續 100 名城資料。
 - 支援原日本 100 名城與續日本 100 名城，標題顯示為 `日本城堡地圖 (100+續)`。
 - 原 100 城 marker 使用紅色 `濟` 字，續 100 城 marker 使用藍色 `濟` 字。
@@ -24,26 +25,42 @@
 - 可用維基百科「日本100名城」頁面與 100finecastles 續 100 城詳細頁更新城堡圖片。
 - 地圖 marker 使用白底 `濟` 字，依城堡系列使用紅色或藍色。
 - 已去過的城堡 marker 正常顯示，未去過的 `濟` 字淡化，可用左側按鈕隱藏。
-- 依各城堡手帳數量顯示熱門外圈，使用 10 個顏色區間。
+- 依各城堡筆記數量顯示熱門外圈，使用 10 個顏色區間。
 - 左側工具按鈕與熱門程度圖例可收合展開。
 - 右側武士階級圖例可收合展開。
 - Google OAuth 登入。
 - 登入帳號名稱左側顯示目前武士等級圓形徽章。
-- 登入後可為同一城堡建立多筆手帳，不同旅遊日期可多筆，同一天只會有一筆。
-- 手帳日期可手動輸入 `YYYY-MM-DD`，也可用日曆 icon 快速選擇日期。
-- 手帳編輯區支援最多 5 張圖片，上傳時會壓縮到 1MB 以下儲存。
+- 登入後可為同一城堡建立多筆筆記，不同旅遊日期可多筆，同一天只會有一筆。
+- 筆記日期可手動輸入 `YYYY-MM-DD`，也可用日曆 icon 快速選擇日期。
+- 筆記編輯區支援最多 5 張圖片，上傳時會壓縮到 1MB 以下儲存。
+- 筆記編輯區可新增順遊推薦，每筆推薦可填名稱、類型、推薦原因、5 星評分與最多 3 張圖片。
+- 新增順遊推薦地點選取：
+  - 使用目前首頁 Leaflet / OpenStreetMap 地圖。
+  - 不預先載入 POI，避免大量流量。
+  - 使用者點選地圖位置後，才以預設 300m 半徑查詢附近 POI 清單，可切換 100m、300m、800m。
+  - 可從附近 POI 選擇店家/景點；若沒有合適地點，可直接使用點選座標。
 - 點城堡時：
-  - 未登入：顯示該城最新 10 筆手帳紀錄。
-  - 已登入：可選擇顯示最新紀錄或輸入手帳。
-  - 觀看其他帳號紀錄時：只顯示該帳號手帳，不顯示輸入手帳。
+  - 未登入：顯示該城最新 10 筆筆記紀錄。
+  - 已登入：預設顯示自己上一筆筆記，可切換顯示最新紀錄或觀看所有紀錄。
+  - 筆記表單可點 `新日期` 清空內容，再輸入同城堡的新旅遊日期紀錄。
+  - 顯示最新紀錄預設只顯示最新一筆，並可縮合/展開。
+  - 觀看其他帳號紀錄時：只顯示該帳號筆記，不顯示輸入筆記。
+- 城堡單頁紀錄：
+  - 由 `觀看所有紀錄` 以新分頁開啟。
+  - 上方顯示城堡圖片。
+  - 左側為旅遊紀錄清單，含帳號武士等級圖示與有圖片提示。
+  - 右側顯示選取紀錄的筆記內容、完整圖片與順遊推薦。
+  - 可切換為順遊推薦模式，只顯示此城堡周邊推薦景點清單。
+  - 順遊推薦地點連結會以經緯度開啟 Google Maps。
+  - 美食與咖啡類順遊推薦會提供 Tabelog 搜尋連結。
 - 點城堡 popup 圖片會開啟對應城堡的中文維基百科文章。
 - 點城堡 popup 內的城堡名稱會開啟 100finecastles 對應城堡介紹頁。
 - 左側按鈕：
   - `城堡名稱`：切換城堡名稱標籤。
   - `隱藏未去過`：只隱藏未去過城堡的 `濟` 字，不隱藏熱門外圈。
-  - `最新更新`：顯示最新 20 筆手帳更新，可點選定位城堡並在城堡右側 popup 顯示手帳。
-  - `熱門城堡`：依手帳數排序顯示前 20 座，含縣市資訊，前三名顯示皇冠。
-  - `我的紀錄`：顯示目前登入使用者的手帳清單，可點選編輯。
+  - `最新更新`：顯示最新 20 筆筆記更新，可點選定位城堡並在城堡右側 popup 顯示筆記。
+  - `熱門城堡`：依筆記數排序顯示前 20 座，含縣市資訊，前三名顯示皇冠。
+  - `我的紀錄`：顯示目前登入使用者的筆記清單，可點選編輯。
   - `最強大名`：依各帳號不重複去過城堡數排序顯示前 30 位帳號。
   - `顯示城堡`：循環切換顯示全部、100 城、續 100 城。
 - 最強大名可點選帳號進入觀看模式：
@@ -66,7 +83,8 @@ jp_travel.sqlite3
 
 - `castles`：城堡名稱、縣市、地址、座標、圖片 URL、來源資料。
 - `users`：Google 登入使用者。
-- `castle_journals`：使用者手帳紀錄與圖片 URL 清單。
+- `castle_journals`：使用者筆記紀錄與圖片 URL 清單。
+- `journal_recommendations`：筆記順遊推薦、評分、座標、OSM 來源與圖片 URL 清單。
 
 `castle_journals` 的唯一限制：
 
@@ -214,19 +232,33 @@ python3 scripts/import_100finecastles.py
 python3 scripts/update_continued_castle_images.py --apply
 ```
 
-產生虛擬手帳資料：
+產生虛擬筆記資料：
 
 ```bash
 python3 scripts/seed_demo_journals.py --count 1100
 ```
 
-為目前 50 筆手帳產生 demo 圖片資料：
+為目前 50 筆筆記產生 demo 圖片資料：
 
 ```bash
 python3 scripts/seed_demo_journal_images.py
 ```
 
-目前已建立約 20 個 demo 使用者與 1100 筆 demo 手帳。
+目前已建立約 20 個 demo 使用者與 1100 筆 demo 筆記。
+
+清除目前所有筆記紀錄並重建大量 demo 資料：
+
+```bash
+python3 scripts/seed_large_demo_journals_with_recommendations.py --count 2000 --image-pool-size 48
+```
+
+此腳本會：
+
+- 清除 `castle_journals` 與 `journal_recommendations`。
+- 建立或更新 40 個 demo 使用者。
+- 產生 2000 筆筆記，每筆 2 張示意圖片。
+- 為每筆筆記產生 2 筆順遊推薦，每筆 1 張示意圖片。
+- 優先從 Pexels 日本街景搜尋結果下載示意圖片；若搜尋頁被擋，改用 Pexels 圖片直連備援。
 
 ## API 摘要
 
@@ -241,8 +273,10 @@ GET  /api/v1/me/journals
 PUT  /api/v1/me/journals/{castle_id}
 GET  /api/v1/journals/latest
 GET  /api/v1/journals/castles/{castle_id}/latest
+GET  /api/v1/journals/castles/{castle_id}
 GET  /api/v1/journals/accounts/rankings
 GET  /api/v1/journals/accounts/{user_id}/journals
+GET  /api/v1/castles/nearby-pois
 ```
 
 `GET /api/v1/castles` 回傳包含：
@@ -254,24 +288,30 @@ GET  /api/v1/journals/accounts/{user_id}/journals
 - 圖片 URL
 - 維基百科 URL `wikipedia_url`
 - 100finecastles 官方城堡介紹 URL `official_url`
-- 手帳數量 `journal_count`
+- 筆記數量 `journal_count`
 - 官方編號 `castle_number`
 - 城堡系列 `castle_series`
 
 ## 資料來源
 
-- 城堡名稱、地址、座標、圖片：ToCoo  
+- 城堡名稱、地址、座標、圖片：ToCoo<br>
   https://www2.tocoo.jp/must-visit/fine-castles.php?cc=cn
-- 日本 100 名城官方清單與城堡介紹頁：日本100名城ガイド  
+- 日本 100 名城官方清單與城堡介紹頁：日本100名城ガイド<br>
   https://www.100finecastles.com/castles-list/
-- 續日本 100 名城官方清單、城堡介紹頁與部分圖片：日本100名城ガイド  
+- 續日本 100 名城官方清單、城堡介紹頁與部分圖片：日本100名城ガイド<br>
   https://www.100finecastles.com/castles-list2/
-- 部分城堡圖片與延伸閱讀：Wikipedia  
+- 部分城堡圖片與延伸閱讀：Wikipedia<br>
   https://www.wikipedia.org/
-- 地圖底圖：OpenStreetMap  
+- 地圖底圖：OpenStreetMap<br>
   https://www.openstreetmap.org/
-- 日本行政區 GeoJSON：JapanPrefGeoJson  
+- 鐵道圖層：OpenRailwayMap<br>
+  https://www.openrailwaymap.org/
+- 附近 POI 查詢：Overpass API / OpenStreetMap 資料<br>
+  https://overpass-api.de/
+- 日本行政區 GeoJSON：JapanPrefGeoJson<br>
   https://github.com/amay077/JapanPrefGeoJson
+- Demo 筆記與順遊推薦示意圖片：Pexels<br>
+  https://www.pexels.com/zh-tw/search/日本街景/
 
 ## 今日完成摘要
 
@@ -279,13 +319,13 @@ GET  /api/v1/journals/accounts/{user_id}/journals
 - 建立日本城堡地圖首頁。
 - 匯入 100 座城堡資料與圖片。
 - 建立 Google 登入與 session。
-- 建立手帳資料模型與 API。
+- 建立筆記資料模型與 API。
 - 加入旅遊日期必填。
-- 支援同帳號同城堡多日期手帳，同一天只更新同一筆。
+- 支援同帳號同城堡多日期筆記，同一天只更新同一筆。
 - 加入熱門程度外圈、熱門圖例、熱門城堡排行。
-- 加入最新更新清單與單一城堡最新手帳紀錄。
+- 加入最新更新清單與單一城堡最新筆記紀錄。
 - 加入我的紀錄清單與編輯入口。
-- 產生 600 筆 demo 手帳資料供地圖測試。
+- 產生 600 筆 demo 筆記資料供地圖測試。
 
 ## 20260730 完成摘要
 
@@ -295,8 +335,8 @@ GET  /api/v1/journals/accounts/{user_id}/journals
   - 支援 dry-run、`--apply`、本機 HTML。
   - 已將本機 SQLite 中 54 座可安全對應城堡圖片換成 Wikimedia 圖片。
 - 城堡 popup 圖片可點擊，開啟對應中文維基百科文章。
-- 補 500 筆 demo 手帳，demo 手帳總數由 600 筆增至 1100 筆。
-- 最新更新清單可點選展開手帳內容，並定位到該城堡。
+- 補 500 筆 demo 筆記，demo 筆記總數由 600 筆增至 1100 筆。
+- 最新更新清單可點選展開筆記內容，並定位到該城堡。
 - 新增最強大名排行榜：
   - 依帳號不重複去過城堡數排名。
   - 顯示前 30 位帳號、去過城堡數、武士階級與小圖示。
@@ -306,26 +346,26 @@ GET  /api/v1/journals/accounts/{user_id}/journals
   - `未去過濟字` 改為 `隱藏未去過`。
   - `帳號排名` 改為 `最強大名`。
 - 調整左上標題區塊位置，避開地圖縮放按鈕。
-- 手帳日期輸入優化：
+- 筆記日期輸入優化：
   - 支援手動輸入 `YYYY-MM-DD`。
   - 快速日期選擇改為日曆 icon。
   - 移除 `今天`、`去年今日` 快捷按鈕。
-- 新增帳號公開手帳 API：
+- 新增帳號公開筆記 API：
   - `GET /api/v1/journals/accounts/rankings`
   - `GET /api/v1/journals/accounts/{user_id}/journals`
 - 測試更新至 11 個案例並通過。
 
 ## 20260803 完成摘要
 
-- 手帳編輯與圖片：
-  - 將輸入手帳編輯區改為較接近 Facebook 發文的編輯方式。
-  - 支援每筆手帳最多上傳 5 張圖片。
+- 筆記編輯與圖片：
+  - 將輸入筆記編輯區改為較接近 Facebook 發文的編輯方式。
+  - 支援每筆筆記最多上傳 5 張圖片。
   - 上傳圖片會壓縮至 1MB 以下後儲存。
-  - 手帳圖片可在紀錄中顯示，點選後以圖片瀏覽器上一張/下一張切換。
+  - 筆記圖片可在紀錄中顯示，點選後以圖片瀏覽器上一張/下一張切換。
   - 新增 `castle_journals.image_urls_json` 與圖片處理服務。
 - Demo 資料：
-  - 新增 `scripts/seed_demo_journal_images.py`，可替目前手帳資料隨機產生示意圖片。
-  - 已為 50 筆手帳產生圖片資料作為上傳檔案示例。
+  - 新增 `scripts/seed_demo_journal_images.py`，可替目前筆記資料隨機產生示意圖片。
+  - 已為 50 筆筆記產生圖片資料作為上傳檔案示例。
 - 日本 100 名城與續 100 名城：
   - 匯入 `https://www.100finecastles.com/castles-list/` 原日本 100 名城。
   - 匯入 `https://www.100finecastles.com/castles-list2/` 續日本 100 名城。
@@ -342,16 +382,16 @@ GET  /api/v1/journals/accounts/{user_id}/journals
   - 修正直接點選遠方城堡時，popup 與左側箭頭對齊城堡 marker 的定位問題。
   - 最新更新、熱門城堡、我的紀錄點選後，會將城堡移到畫面中間偏上，並在城堡右側顯示 popup。
 - 最新更新、熱門城堡、我的紀錄：
-  - 最新更新列表改為只顯示清單，不再在列表內展開手帳內容。
-  - 點選最新更新後，手帳紀錄顯示於城堡右側 popup。
+  - 最新更新列表改為只顯示清單，不再在列表內展開筆記內容。
+  - 點選最新更新後，筆記紀錄顯示於城堡右側 popup。
   - 最新紀錄顯示改為每列一筆。
-  - 手帳紀錄卡固定高度；文字過長時以 `.....` 展開完整內容。
+  - 筆記紀錄卡固定高度；文字過長時以 `.....` 展開完整內容。
   - 熱門城堡與我的紀錄面板寬度依內容收斂，避免過多留白。
   - 修正左側工具按鈕遮住熱門城堡與我的紀錄面板的問題。
 - 地圖 UI 與圖例：
   - 左側工具按鈕群與熱門程度圖例可收合展開。
   - 右側武士階級圖例可收合展開。
-  - 收合工具按鈕群時會關閉仍開啟的最新更新、熱門城堡、我的紀錄、最強大名與手帳視窗。
+  - 收合工具按鈕群時會關閉仍開啟的最新更新、熱門城堡、我的紀錄、最強大名與筆記視窗。
   - 武士階級排序改為 `天下人` 在最上方。
   - 登入帳號名稱左側新增圓形武士等級徽章。
   - 頁首標題改為 `日本城堡地圖 (100+續)`，不再顯示動態 `N 座城堡` 文字。
@@ -363,8 +403,102 @@ GET  /api/v1/journals/accounts/{user_id}/journals
   - 點選後以畫面中央 modal 顯示內容，可用關閉鈕、背景遮罩或 Escape 關閉。
   - `參考網站` 條文列出 100finecastles、Wikipedia、OpenStreetMap、JapanPrefGeoJson、Google OAuth 等外部來源與使用內容。
   - 條文註明本站無盈利模式，免費開放使用。
-  - `隱私條款` 條文說明 Google 登入、帳號基本資料、手帳、圖片、公開顯示與資料使用目的。
+  - `隱私條款` 條文說明 Google 登入、帳號基本資料、筆記、圖片、公開顯示與資料使用目的。
 - 驗證：
   - `node --check static/map.js` 通過。
   - `ruff check .` 通過。
   - `pytest` 維持 11 個案例通過。
+
+## 20260804 完成摘要
+
+- 城堡 popup 筆記操作：
+  - `顯示最新紀錄` 改為預設縮合，只顯示最新一筆。
+  - 點選最新紀錄可展開完整內容。
+  - 修正展開最新紀錄後 `顯示最新紀錄`、`輸入筆記`、`觀看所有紀錄` 按鈕消失的問題。
+  - `輸入筆記` 右側新增 `觀看所有紀錄`，以新分頁開啟該城堡完整紀錄頁。
+- 城堡完整紀錄頁：
+  - 上方顯示較低高度的城堡圖片，降低版面占用。
+  - 左側顯示旅遊紀錄清單。
+  - 帳號名稱前顯示該帳號武士等級圖示。
+  - 有圖片的紀錄在左側清單顯示圖片提示。
+  - 右側顯示選取紀錄的筆記文字、完整圖片與順遊推薦，不再只顯示縮圖。
+  - 調整版面、卡片、色彩與狀態樣式，讓單頁紀錄閱讀更完整。
+- 筆記 modal：
+  - `儲存筆記` 按鈕移到旅遊日期右方，避免被畫面下方遮住。
+  - 儲存成功後自動關閉 modal 視窗。
+- 順遊推薦設計與實作：
+  - 新增每筆筆記的順遊推薦資料模型與 API 儲存流程。
+  - 每筆推薦可填名稱、分類、推薦原因、5 星點選評分、座標、OSM 連結與圖片。
+  - 推薦圖片支援上傳，最多 3 張；demo 資料每筆推薦放 1 張。
+  - 地點選取使用目前 Leaflet / OpenStreetMap 地圖，不使用 Google Maps。
+  - 不預先載入 POI；使用者點選地圖後，才用 Overpass 查詢該座標附近 POI 清單，半徑可切換 100m、300m、800m。
+  - 若附近沒有 POI 或沒有合適店家/景點，可直接使用點選座標。
+  - 討論並確認目前使用 OpenStreetMap tile 不需要個別授權，但需遵守 OSM/服務供應者署名、使用政策與流量限制。
+- 大量 demo 資料：
+  - 新增 `scripts/seed_large_demo_journals_with_recommendations.py`。
+  - 已清除原本筆記與順遊推薦紀錄。
+  - 已重新建立 2000 筆筆記與 4000 筆順遊推薦。
+  - 每筆筆記含 2 張圖片，每筆順遊推薦含 1 張圖片。
+  - 資料涵蓋 40 個 demo 帳號與 226 座城堡。
+  - Pexels 搜尋頁回傳 403 時，腳本改用 Pexels 圖片直連備援，實際下載 6 張示意圖片並隨機套用。
+- 驗證：
+  - `node --check static/map.js` 通過。
+  - `node --check static/castle_journals.js` 通過。
+  - `ruff check .` 通過。
+  - `pytest` 維持 12 個案例通過。
+  - 大量 demo 資料驗證：2000 筆筆記皆有 2 張圖片，4000 筆順遊推薦皆有 1 張圖片。
+  - API 驗證最新紀錄與城堡完整紀錄頁資料可正常回傳。
+
+## 20260817 完成摘要
+
+- 啟動與開發環境：
+  - 修正 `.venv` 缺少 `Pillow`、`python-multipart` 導致 `uvicorn app.main:app` 無法啟動的問題。
+  - `pyproject.toml` 明確指定 setuptools 只 discovery `app*`，避免 editable install 因 `app`、`static` 多個 top-level 目錄失敗。
+  - `app/schemas/common.py` 改用 Python 3.12 泛型語法，讓 `ruff check .` 通過。
+  - 確認本機服務可在 `http://127.0.0.1:8000` 啟動，健康檢查正常。
+- 文案與武士階級：
+  - 將浪人徽章 icon 由 `流` 修正為 `浪`。
+  - 全站畫面與 README/readme 文案將 `手帳` 改為 `筆記`。
+- 順遊推薦地點選取：
+  - 保留 Leaflet + Overpass / OpenStreetMap，但將點選位置 POI 搜尋由 20m 改為預設 300m。
+  - 地點選取器新增 100m、300m、800m 半徑切換，切換半徑會以同一座標重新查詢。
+  - 修正 POI 結果清單第一筆被地圖蓋住的版面問題。
+  - 討論 Geoapify、Mapbox Search、Google Places、Foursquare、OpenTripMap、GeoNames 等免費或低成本 POI 選項。
+- 順遊推薦外部連結：
+  - 順遊推薦地點連結改為優先以經緯度開啟 Google Maps。
+  - 美食與咖啡類推薦新增 Tabelog 繁中站搜尋連結，以店名與地址組合搜尋。
+- 城堡完整紀錄頁：
+  - `/castles/{castle_id}/journals` 新增 `順遊推薦` 切換按鈕。
+  - 可只顯示該城堡所有筆記中的周邊順遊推薦清單。
+  - 推薦卡顯示分類、Google Maps、Tabelog、推薦人、旅遊日期、星等、地址、推薦原因與圖片。
+- 筆記輸入流程：
+  - 修正先輸入順遊推薦後再點日曆日期，表單被既有日期資料覆蓋、未儲存內容清空的問題。
+  - 登入後點選城堡預設顯示自己的上一筆筆記。
+  - 筆記表單新增 `新日期` 按鈕，可清空目前內容後輸入同城堡的新旅遊日期紀錄。
+- 地圖視覺與圖層：
+  - 熱門程度 10 階顏色改為較高辨識度的色彩序列。
+  - 討論 Mapbox 與 Google Maps 成本差異：Mapbox 通常較便宜，Google Places 資料較完整但成本較高。
+  - 主地圖新增 `鐵道圖層` 開關，使用 OpenRailwayMap standard layer，預設關閉、需要時才載入。
+  - 參考網站 modal 與 README 補充 OpenRailwayMap 來源。
+- 今日後續調整：
+  - 頁首登入區右方新增 `選單` 與 `階級` 按鈕，左側選單改為直排工具列。
+  - `選單` 內新增 `地方區域` 按鈕，可切換主地圖日本地方區塊上色。
+  - 主地圖預設中心改為二條城，預設 zoom 由 6 調整為 8。
+  - 熱門程度改為每 20 次一級、共 10 層；熱門圈改為無邊框填滿圓，筆記數越多越大。
+  - `隱藏未去過` 未登入時反灰不可按，並會連同未去過城堡熱門圈一起隱藏。
+  - `最新更新`、`熱門城堡`、`我的紀錄` 清單從左側展開，並貼齊左側選單最上方按鈕位置。
+  - 點選清單筆記或直接點選城堡 marker 時，城堡移到畫面中央、顯示城堡名稱，筆記改由右側面板滑出。
+  - 右側筆記面板顯示城堡圖片、城堡名稱官方連結、地址、`輸入筆記` 與 `觀看所有紀錄`；未登入時不顯示 `輸入筆記`。
+  - 美化右側筆記卡片，縮小留白、移除多餘裝飾圓點，改善文字與圖片排版。
+  - 新增公開統計 API `GET /api/v1/journals/stats`，頁首階級按鈕右方顯示已登錄筆記人數與筆記數量。
+  - `最強大名` 清單顯示於畫面中央；點選帳號後，依該帳號在各縣去過城堡數 / 該縣總城堡數的完成率，以紫色系為縣區域分級上色。
+  - 最強大名縣別完成率色階圖例顯示於畫面右下方，可用 X 關閉。
+- Demo 資料：
+  - `scripts/seed_large_demo_journals_with_recommendations.py` 新增 `--append` 模式，可保留既有資料並追加 demo 筆記。
+  - 已追加 5000 筆 demo 筆記與 10000 筆順遊推薦；目前本機資料約 7005 筆筆記、14005 筆順遊推薦。
+- 驗證：
+  - `node --check static/map.js` 通過。
+  - `node --check static/castle_journals.js` 通過。
+  - `ruff check .` 通過。
+  - `pytest` 維持 12 個案例通過。
+  - `ruff check scripts/seed_large_demo_journals_with_recommendations.py` 通過。

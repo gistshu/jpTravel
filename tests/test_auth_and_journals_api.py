@@ -10,6 +10,7 @@ from app.main import create_app
 from app.models.base import Base
 from app.models.castle import Castle
 from app.models.castle_journal import CastleJournal
+from app.models.journal_recommendation import JournalRecommendation
 from app.models.user import User
 from app.repositories.journal_repository import JournalRepository
 
@@ -316,6 +317,97 @@ def test_latest_castle_journals_returns_public_records() -> None:
     assert payload["data"][0]["user_display_name"] == "另一位旅人"
     assert payload["data"][0]["travel_date"] == "2026-07-20"
     assert payload["data"][0]["journal_text"] == "白色城牆非常漂亮。"
+    db_session.close()
+
+
+def test_castle_journals_returns_castle_and_all_records() -> None:
+    """Castle journal collection API should expose castle data and all records."""
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db_session = session_local()
+    user = User(
+        google_sub="castle-journals-user-1",
+        email="castle-journals@example.com",
+        display_name="全部紀錄旅人",
+    )
+    castle = Castle(
+        source_location_id="castle-journals-loc-1",
+        name="熊本城",
+        prefecture="熊本縣",
+        address="熊本市中央區本丸1-1",
+        latitude=32.806186,
+        longitude=130.705834,
+        image_url="https://example.com/kumamoto.jpg",
+        source_url="https://www.100finecastles.com/castles/kumamotojo/",
+    )
+    db_session.add_all([user, castle])
+    db_session.flush()
+    first_journal = CastleJournal(
+        user_id=user.id,
+        castle_id=castle.id,
+        visited=True,
+        travel_date=date(2026, 6, 1),
+        journal_text="第一次登城。",
+    )
+    second_journal = CastleJournal(
+        user_id=user.id,
+        castle_id=castle.id,
+        visited=True,
+        travel_date=date(2026, 7, 1),
+        journal_text="夏天再訪。",
+        image_urls_json='["/static/uploads/journals/demo.jpg"]',
+    )
+    db_session.add_all([first_journal, second_journal])
+    db_session.flush()
+    db_session.add(
+        JournalRecommendation(
+            journal_id=second_journal.id,
+            user_id=user.id,
+            castle_id=castle.id,
+            name="熊本拉麵",
+            category="food",
+            description="登城後適合晚餐。",
+            google_maps_url="https://maps.google.com/example",
+        ),
+    )
+    db_session.commit()
+
+    def override_db_session():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    application = create_app()
+    application.dependency_overrides[get_db_session] = override_db_session
+    client = TestClient(application)
+
+    response = client.get(f"/api/v1/journals/castles/{castle.id}")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["success"] is True
+    assert payload["data"]["castle_id"] == castle.id
+    assert payload["data"]["castle_name"] == "熊本城"
+    assert payload["data"]["prefecture"] == "熊本縣"
+    assert payload["data"]["image_url"] == "https://example.com/kumamoto.jpg"
+    assert payload["data"]["records"][0]["travel_date"] == "2026-07-01"
+    assert payload["data"]["records"][0]["title"] == "浪人"
+    assert payload["data"]["records"][0]["title_level"] == 0
+    assert payload["data"]["records"][0]["image_urls"] == [
+        "/static/uploads/journals/demo.jpg",
+    ]
+    recommendation = payload["data"]["records"][0]["recommendations"][0]
+    assert recommendation["name"] == "熊本拉麵"
+    assert recommendation["category"] == "food"
+    assert recommendation["description"] == "登城後適合晚餐。"
+    assert recommendation["google_maps_url"] == "https://maps.google.com/example"
+    assert payload["data"]["records"][1]["journal_text"] == "第一次登城。"
     db_session.close()
 
 

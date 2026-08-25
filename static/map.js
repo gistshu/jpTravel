@@ -2,12 +2,15 @@ const JAPAN_BOUNDS = L.latLngBounds(
   [23.0, 122.0],
   [46.5, 154.5],
 );
-const OSAKA_CASTLE_CENTER = [34.687315, 135.526201];
-const DEFAULT_ZOOM = 6;
-const POPULARITY_BUCKET_SIZE = 3;
+const DEFAULT_MAP_CENTER = [35.014239, 135.748134];
+const DEFAULT_ZOOM = 8;
+const POPULARITY_BUCKET_SIZE = 20;
 const MAX_JOURNAL_IMAGES = 5;
+const MAX_RECOMMENDATION_IMAGES = 3;
 const POPUP_ARROW_Y = 64;
 const POPUP_LEFT_GAP = 15;
+const DEFAULT_POI_SEARCH_RADIUS_METERS = 300;
+const POI_SEARCH_RADIUS_OPTIONS = [100, 300, 800];
 const SAMURAI_TITLES = [
   "浪人",
   "鄉士",
@@ -22,19 +25,47 @@ const SAMURAI_TITLES = [
   "霸主",
   "天下人",
 ];
-const SAMURAI_TITLE_ICONS = ["流", "鄉", "足", "侍", "頭", "將", "家", "宿", "小", "大", "霸", "天"];
+const SAMURAI_TITLE_ICONS = ["浪", "鄉", "足", "侍", "頭", "將", "家", "宿", "小", "大", "霸", "天"];
 const MAX_CASTLE_COUNT_FOR_TOP_TITLE = 100;
 const POPULARITY_COLORS = [
-  "#dfe8ef",
-  "#bfe3ea",
-  "#9edccf",
-  "#a9d76f",
-  "#f0d861",
-  "#f4b85c",
-  "#ef8f4f",
-  "#e75f4f",
-  "#c83f65",
-  "#8f2f80",
+  "#8ca0b3",
+  "#2f80ed",
+  "#00a6c8",
+  "#009b72",
+  "#72a700",
+  "#d8a000",
+  "#f47c20",
+  "#d93636",
+  "#c0267a",
+  "#6f35c4",
+];
+const PREFECTURE_REGION_COLORS = [
+  { ids: [1], color: "#d9edf7" },
+  { ids: [2, 3, 4, 5, 6, 7], color: "#dcebd8" },
+  { ids: [8, 9, 10, 11, 12, 13, 14], color: "#f5e3dd" },
+  { ids: [15, 16, 17, 18, 19, 20, 21, 22, 23], color: "#f6edc8" },
+  { ids: [24, 25, 26, 27, 28, 29, 30], color: "#e7e0f2" },
+  { ids: [31, 32, 33, 34, 35], color: "#d8e8ef" },
+  { ids: [36, 37, 38, 39], color: "#f4dfbd" },
+  { ids: [40, 41, 42, 43, 44, 45, 46, 47], color: "#dce9df" },
+];
+const ACCOUNT_PREFECTURE_COLORS = [
+  "#f1ecf7",
+  "#dfd0f0",
+  "#c6a6df",
+  "#a978cd",
+  "#8951b5",
+  "#68309a",
+];
+const NEUTRAL_PREFECTURE_COLOR = "#f3f5f2";
+const RECOMMENDATION_CATEGORIES = [
+  ["attraction", "景點"],
+  ["food", "美食"],
+  ["shop", "商店"],
+  ["cafe", "咖啡"],
+  ["hotel", "住宿"],
+  ["transport", "交通"],
+  ["other", "其他"],
 ];
 
 const map = L.map("map", {
@@ -45,8 +76,24 @@ const map = L.map("map", {
   minZoom: 4,
   preferCanvas: true,
   worldCopyJump: false,
-}).setView(OSAKA_CASTLE_CENTER, DEFAULT_ZOOM);
+}).setView(DEFAULT_MAP_CENTER, DEFAULT_ZOOM);
 
+map.createPane("railwayPane");
+map.getPane("railwayPane").style.zIndex = 430;
+
+const railwayLayer = L.tileLayer(
+  "https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",
+  {
+    attribution: (
+      'Railway style: <a href="https://www.openrailwaymap.org/" target="_blank" rel="noopener noreferrer">OpenRailwayMap</a>'
+    ),
+    maxZoom: 19,
+    minZoom: 2,
+    pane: "railwayPane",
+    tileSize: 256,
+    bounds: JAPAN_BOUNDS.pad(0.02),
+  },
+);
 const markerGroup = L.featureGroup().addTo(map);
 const countElement = document.querySelector("#castle-count");
 const authRankBadgeElement = document.querySelector("#auth-rank-badge");
@@ -54,7 +101,12 @@ const authNameElement = document.querySelector("#auth-name");
 const loginLink = document.querySelector("#login-link");
 const logoutButton = document.querySelector("#logout-button");
 const toggleCastleLabelsButton = document.querySelector("#toggle-castle-labels");
+const toggleRailwayLayerButton = document.querySelector("#toggle-railway-layer");
+const toggleRegionColorsButton = document.querySelector("#toggle-region-colors");
 const toggleVisitedMarkersButton = document.querySelector("#toggle-visited-markers");
+const togglePopularityLegendButton = document.querySelector(
+  "#toggle-popularity-legend",
+);
 const toggleActivityPanelButton = document.querySelector("#toggle-activity-panel");
 const togglePopularPanelButton = document.querySelector("#toggle-popular-panel");
 const toggleMyRecordsPanelButton = document.querySelector("#toggle-my-records-panel");
@@ -68,14 +120,18 @@ const activityPanel = document.querySelector("#activity-panel");
 const activityList = document.querySelector("#activity-list");
 const activityEmpty = document.querySelector("#activity-empty");
 const refreshActivityButton = document.querySelector("#refresh-activity");
+const closeActivityPanelButton = document.querySelector("#close-activity-panel");
 const leftToolDrawer = document.querySelector("#left-tool-drawer");
 const toggleLeftToolDrawerButton = document.querySelector("#toggle-left-tool-drawer");
+const popularityLegend = document.querySelector("#popularity-legend");
 const popularityLegendList = document.querySelector("#popularity-legend-list");
 const popularPanel = document.querySelector("#popular-panel");
 const popularList = document.querySelector("#popular-list");
+const closePopularPanelButton = document.querySelector("#close-popular-panel");
 const myRecordsPanel = document.querySelector("#my-records-panel");
 const myRecordsList = document.querySelector("#my-records-list");
 const myRecordsEmpty = document.querySelector("#my-records-empty");
+const closeMyRecordsPanelButton = document.querySelector("#close-my-records-panel");
 const journalSidePanel = document.querySelector("#journal-side-panel");
 const journalSideTitle = document.querySelector("#journal-side-title");
 const journalSideSubtitle = document.querySelector("#journal-side-subtitle");
@@ -94,23 +150,38 @@ const samuraiRankLegendList = document.querySelector("#samurai-rank-legend-list"
 const accountViewBanner = document.querySelector("#account-view-banner");
 const accountViewLabel = document.querySelector("#account-view-label");
 const closeAccountViewButton = document.querySelector("#close-account-view");
+const accountPrefectureLegend = document.querySelector("#account-prefecture-legend");
+const accountPrefectureLegendList = document.querySelector(
+  "#account-prefecture-legend-list",
+);
+const closeAccountPrefectureLegendButton = document.querySelector(
+  "#close-account-prefecture-legend",
+);
 const siteInfoModal = document.querySelector("#site-info-modal");
 const siteInfoTitle = document.querySelector("#site-info-title");
 const siteInfoReferences = document.querySelector("#site-info-references");
 const siteInfoPrivacy = document.querySelector("#site-info-privacy");
+const journalStatsElement = document.querySelector("#journal-stats");
 
 const markerByCastleId = new Map();
 const castleById = new Map();
 const journalByCastleId = new Map();
 const viewedAccountJournalByCastleId = new Map();
+let administrativeAreaLayer = null;
+let latestActivities = [];
+let selectedCastleLabelId = null;
 const mapViewState = {
   showCastleLabels: false,
+  showRailwayLayer: false,
+  showRegionColors: true,
   showUnvisitedMarkers: true,
+  showPopularityLegend: false,
   showActivityPanel: false,
   showPopularPanel: false,
   showMyRecordsPanel: false,
   showAccountRankingPanel: false,
   showJournalSidePanel: false,
+  showAccountPrefectureLegend: false,
   showLeftToolDrawer: false,
   showRightRankDrawer: false,
   castleSeriesFilter: "all",
@@ -118,6 +189,14 @@ const mapViewState = {
 const journalGalleryState = {
   imageUrls: [],
   currentIndex: 0,
+};
+const poiPickerState = {
+  row: null,
+  map: null,
+  markerLayer: null,
+  selectedMarker: null,
+  clickedLatLng: null,
+  searchRadiusMeters: DEFAULT_POI_SEARCH_RADIUS_METERS,
 };
 let viewedAccount = null;
 let currentAuth = {
@@ -140,6 +219,10 @@ function buildWikipediaUrl(castle) {
     ?? `https://zh.wikipedia.org/wiki/${encodeURIComponent(castle.name)}`;
 }
 
+function buildCastleJournalPageUrl(castleId) {
+  return `/castles/${encodeURIComponent(castleId)}/journals`;
+}
+
 function getPopularityLevel(journalCount) {
   if (journalCount <= 0) {
     return 0;
@@ -154,9 +237,111 @@ function getPopularityRangeLabel(level) {
   const minCount = level * POPULARITY_BUCKET_SIZE + 1;
   const maxCount = (level + 1) * POPULARITY_BUCKET_SIZE;
   if (level === POPULARITY_COLORS.length - 1) {
-    return `${minCount}+ 筆`;
+    return `${minCount}+ 次`;
   }
-  return `${minCount}-${maxCount} 筆`;
+  return `${minCount}-${maxCount} 次`;
+}
+
+function getPrefectureRegionColor(prefectureId) {
+  const id = Number(prefectureId);
+  const region = PREFECTURE_REGION_COLORS.find((item) => item.ids.includes(id));
+  return region?.color ?? "#e9efe3";
+}
+
+function normalizePrefectureName(value) {
+  return String(value || "")
+    .replace(/\s+/g, "")
+    .replaceAll("縣", "県");
+}
+
+function getViewedAccountPrefectureCounts() {
+  const visitedCastleIdsByPrefecture = new Map();
+  viewedAccountJournalByCastleId.forEach((journals, castleId) => {
+    if (!journals.some((journal) => journal.visited)) {
+      return;
+    }
+    const prefecture = normalizePrefectureName(castleById.get(castleId)?.prefecture);
+    if (!prefecture) {
+      return;
+    }
+    const castleIds = visitedCastleIdsByPrefecture.get(prefecture) ?? new Set();
+    castleIds.add(castleId);
+    visitedCastleIdsByPrefecture.set(prefecture, castleIds);
+  });
+
+  return new Map(
+    Array.from(visitedCastleIdsByPrefecture.entries()).map(
+      ([prefecture, castleIds]) => [prefecture, castleIds.size],
+    ),
+  );
+}
+
+function getPrefectureCastleCounts() {
+  const castleIdsByPrefecture = new Map();
+  castleById.forEach((castle, castleId) => {
+    if (!isOfficialCastle(castle)) {
+      return;
+    }
+    const prefecture = normalizePrefectureName(castle.prefecture);
+    if (!prefecture) {
+      return;
+    }
+    const castleIds = castleIdsByPrefecture.get(prefecture) ?? new Set();
+    castleIds.add(castleId);
+    castleIdsByPrefecture.set(prefecture, castleIds);
+  });
+
+  return new Map(
+    Array.from(castleIdsByPrefecture.entries()).map(
+      ([prefecture, castleIds]) => [prefecture, castleIds.size],
+    ),
+  );
+}
+
+function getAccountPrefectureColor(visitedCount, totalCount) {
+  if (visitedCount <= 0 || totalCount <= 0) {
+    return NEUTRAL_PREFECTURE_COLOR;
+  }
+  const completionRate = Math.min(1, visitedCount / totalCount);
+  const colorCount = ACCOUNT_PREFECTURE_COLORS.length;
+  const colorIndex = Math.min(
+    colorCount - 1,
+    Math.ceil(completionRate * colorCount) - 1,
+  );
+  return ACCOUNT_PREFECTURE_COLORS[colorIndex];
+}
+
+function getAdministrativeAreaStyle(feature) {
+  const prefectureName = normalizePrefectureName(feature.properties?.nam_ja);
+  if (viewedAccount) {
+    const prefectureCounts = getViewedAccountPrefectureCounts();
+    const totalCastleCounts = getPrefectureCastleCounts();
+    const visitedCount = prefectureCounts.get(prefectureName) ?? 0;
+    const totalCount = totalCastleCounts.get(prefectureName) ?? 0;
+    return {
+      color: "#8f9ca3",
+      fillColor: getAccountPrefectureColor(visitedCount, totalCount),
+      fillOpacity: visitedCount > 0 ? 0.9 : 0.38,
+      opacity: 1,
+      weight: visitedCount > 0 ? 1.2 : 0.75,
+    };
+  }
+
+  return {
+    color: "#9aa4a9",
+    fillColor: mapViewState.showRegionColors
+      ? getPrefectureRegionColor(feature.properties?.id)
+      : NEUTRAL_PREFECTURE_COLOR,
+    fillOpacity: mapViewState.showRegionColors ? 0.88 : 0.34,
+    opacity: 1,
+    weight: 0.9,
+  };
+}
+
+function refreshAdministrativeAreaStyles() {
+  if (administrativeAreaLayer) {
+    administrativeAreaLayer.setStyle(getAdministrativeAreaStyle);
+  }
 }
 
 function getSamuraiRankRangeLabel(level) {
@@ -208,6 +393,30 @@ function renderSamuraiRankLegend() {
       </span>
     `;
     samuraiRankLegendList.append(item);
+  });
+}
+
+function renderAccountPrefectureLegend() {
+  accountPrefectureLegendList.innerHTML = "";
+  const ranges = ACCOUNT_PREFECTURE_COLORS.map((color, index) => {
+    const minRate = Math.floor(index / ACCOUNT_PREFECTURE_COLORS.length * 100) + 1;
+    const maxRate = Math.floor((index + 1) / ACCOUNT_PREFECTURE_COLORS.length * 100);
+    return { color, label: `${minRate}-${maxRate}%` };
+  });
+  [
+    { color: NEUTRAL_PREFECTURE_COLOR, label: "0%" },
+    ...ranges,
+  ].forEach((item) => {
+    const element = document.createElement("li");
+    element.className = "account-prefecture-legend-item";
+    element.innerHTML = `
+      <span
+        class="account-prefecture-legend-swatch"
+        style="--legend-color: ${item.color};"
+      ></span>
+      <span>${escapeHtml(item.label)}</span>
+    `;
+    accountPrefectureLegendList.append(element);
   });
 }
 
@@ -286,15 +495,15 @@ function isCastleVisible(castle) {
 
 function createCastleIcon(isVisited, journalCount, castleSeries) {
   const popularityLevel = getPopularityLevel(journalCount);
-  const ringSize = journalCount > 0 ? 40 + popularityLevel * 5 : 34;
-  const ringOpacity = journalCount > 0 ? 0.32 + popularityLevel * 0.06 : 0.12;
+  const ringSize = journalCount > 0 ? 30 + popularityLevel * 4 : 0;
+  const ringOpacity = journalCount > 0 ? 0.32 + popularityLevel * 0.06 : 0;
   const ringColor = POPULARITY_COLORS[popularityLevel];
 
   return L.divIcon({
     className: "",
     html: `
       <div
-        class="castle-marker-wrap"
+        class="castle-marker-wrap ${isVisited ? "is-visited" : "is-unvisited"}"
         style="
           --popularity-ring-size: ${ringSize}px;
           --popularity-ring-color: ${ringColor};
@@ -368,6 +577,41 @@ function getJournalImageUrls(journal) {
   return Array.isArray(journal.image_urls) ? journal.image_urls : [];
 }
 
+function getJournalRecommendations(journal) {
+  return Array.isArray(journal.recommendations) ? journal.recommendations : [];
+}
+
+function getGoogleMapsUrl(latitude, longitude) {
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return "";
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+}
+
+function getRecommendationMapUrl(recommendation) {
+  return (
+    getGoogleMapsUrl(recommendation.latitude, recommendation.longitude)
+    || recommendation.google_maps_url
+    || recommendation.osm_url
+    || ""
+  );
+}
+
+function getTabelogSearchUrl(recommendation) {
+  if (!["food", "cafe"].includes(recommendation.category)) {
+    return "";
+  }
+  const query = [recommendation.name, recommendation.address]
+    .filter(Boolean)
+    .join(" ");
+  if (!query.trim()) {
+    return "";
+  }
+  return `https://tabelog.com/tw/rstLst/?SrtT=trend&sw=${encodeURIComponent(query)}`;
+}
+
 function renderJournalImages(imageUrls, className = "journal-image-grid") {
   if (!imageUrls.length) {
     return "";
@@ -378,9 +622,9 @@ function renderJournalImages(imageUrls, className = "journal-image-grid") {
       class="journal-gallery-button"
       type="button"
       data-image-url="${escapeHtml(imageUrl)}"
-      aria-label="開啟手帳圖片"
+      aria-label="開啟筆記圖片"
     >
-      <img src="${escapeHtml(imageUrl)}" alt="手帳圖片">
+      <img src="${escapeHtml(imageUrl)}" alt="筆記圖片">
     </button>
   `);
   return `<div class="${className}">${images.join("")}</div>`;
@@ -401,7 +645,7 @@ function ensureJournalGallery() {
     <div class="journal-gallery-dialog" role="dialog" aria-modal="true">
       <button class="journal-gallery-close" type="button" data-gallery-close aria-label="關閉圖片">×</button>
       <button class="journal-gallery-nav journal-gallery-prev" type="button" data-gallery-prev aria-label="上一張">‹</button>
-      <img class="journal-gallery-image" alt="手帳圖片">
+      <img class="journal-gallery-image" alt="筆記圖片">
       <button class="journal-gallery-nav journal-gallery-next" type="button" data-gallery-next aria-label="下一張">›</button>
       <div class="journal-gallery-count"></div>
     </div>
@@ -456,6 +700,164 @@ function moveJournalGallery(step) {
   renderJournalGallery();
 }
 
+function renderRecommendationEditor(journal) {
+  const recommendations = getJournalRecommendations(journal);
+  const rows = recommendations.map(renderRecommendationEditorRow).join("");
+  return `
+    <section class="journal-recommendation-editor">
+      <div class="journal-recommendation-header">
+        <h3>順遊推薦</h3>
+        <button class="journal-add-recommendation" type="button">
+          新增推薦
+        </button>
+      </div>
+      <div class="journal-recommendation-list">
+        ${rows}
+      </div>
+    </section>
+  `;
+}
+
+function renderRecommendationEditorRow(recommendation = {}) {
+  const category = recommendation.category || "other";
+  const selectedRating = Number(recommendation.rating) || 0;
+  const categoryOptions = RECOMMENDATION_CATEGORIES.map(([value, label]) => `
+    <option value="${escapeHtml(value)}" ${value === category ? "selected" : ""}>
+      ${escapeHtml(label)}
+    </option>
+  `).join("");
+  return `
+    <div class="journal-recommendation-row">
+      <div class="journal-recommendation-grid">
+        <input
+          class="journal-recommendation-name"
+          type="text"
+          maxlength="120"
+          placeholder="店家或景點名稱"
+          value="${escapeHtml(recommendation.name || "")}"
+        >
+        <select class="journal-recommendation-category">
+          ${categoryOptions}
+        </select>
+      </div>
+      <div class="journal-recommendation-place">
+        <button class="journal-pick-place" type="button">
+          地圖選取店家/景點
+        </button>
+        <span class="journal-picked-place">
+          ${recommendation.latitude && recommendation.longitude
+            ? `${escapeHtml(recommendation.latitude)}, ${escapeHtml(recommendation.longitude)}`
+            : "尚未選取地點"}
+        </span>
+      </div>
+      <input
+        class="journal-recommendation-address"
+        type="hidden"
+        value="${escapeHtml(recommendation.address || "")}"
+      >
+      <input
+        class="journal-recommendation-latitude"
+        type="hidden"
+        value="${escapeHtml(recommendation.latitude || "")}"
+      >
+      <input
+        class="journal-recommendation-longitude"
+        type="hidden"
+        value="${escapeHtml(recommendation.longitude || "")}"
+      >
+      <input
+        class="journal-recommendation-osm-type"
+        type="hidden"
+        value="${escapeHtml(recommendation.osm_type || "")}"
+      >
+      <input
+        class="journal-recommendation-osm-id"
+        type="hidden"
+        value="${escapeHtml(recommendation.osm_id || "")}"
+      >
+      <input
+        class="journal-recommendation-osm-url"
+        type="hidden"
+        value="${escapeHtml(recommendation.osm_url || "")}"
+      >
+      <div class="journal-recommendation-rating">
+        <span>星號</span>
+        <input
+          class="journal-recommendation-rating-input"
+          type="hidden"
+          value="${selectedRating || ""}"
+        >
+        <div class="journal-star-rating" aria-label="星號等級">
+          ${[1, 2, 3, 4, 5].map((rating) => `
+            <button
+              class="journal-star-button ${rating <= selectedRating ? "is-active" : ""}"
+              type="button"
+              data-rating="${rating}"
+              aria-label="${rating} 星"
+            >
+              ★
+            </button>
+          `).join("")}
+        </div>
+      </div>
+      <textarea
+        class="journal-recommendation-description"
+        maxlength="1000"
+        placeholder="推薦原因"
+      >${escapeHtml(recommendation.description || "")}</textarea>
+      <div class="journal-recommendation-images">
+        <input
+          class="journal-recommendation-existing-images"
+          type="hidden"
+          value="${escapeHtml(JSON.stringify(getJournalImageUrls(recommendation)))}"
+        >
+        <div class="journal-recommendation-image-preview">
+          ${renderRecommendationImagePreview(getJournalImageUrls(recommendation))}
+        </div>
+        <label class="journal-recommendation-image-upload">
+          <input
+            class="journal-recommendation-image-input"
+            type="file"
+            accept="image/*"
+            multiple
+          >
+          <span>加入推薦照片</span>
+          <small>最多 ${MAX_RECOMMENDATION_IMAGES} 張</small>
+        </label>
+      </div>
+      <div class="journal-recommendation-grid">
+        <input
+          class="journal-recommendation-map-url"
+          type="url"
+          maxlength="500"
+          placeholder="Google Maps 連結"
+          value="${escapeHtml(getRecommendationMapUrl(recommendation))}"
+        >
+        <button class="journal-remove-recommendation" type="button">
+          刪除
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderRecommendationImagePreview(imageUrls) {
+  return imageUrls.map((imageUrl, index) => `
+    <figure class="journal-recommendation-image-item">
+      <img src="${escapeHtml(imageUrl)}" alt="推薦圖片 ${index + 1}">
+      <button
+        class="journal-recommendation-image-remove"
+        type="button"
+        data-image-kind="existing"
+        data-image-index="${index}"
+        aria-label="移除推薦圖片"
+      >
+        ×
+      </button>
+    </figure>
+  `).join("");
+}
+
 function renderJournalImageEditor(journal) {
   const imageUrls = getJournalImageUrls(journal);
   return `
@@ -487,7 +889,7 @@ function buildJournalForm(castle, travelDate = null) {
     ? getJournalForCastleDate(castle.id, travelDate)
     : getDefaultJournal(castle.id);
   return `
-    <form class="journal-form">
+    <form class="journal-form" data-loaded-travel-date="${escapeHtml(journal.travel_date)}">
       <label class="journal-visited">
         <input
           type="checkbox"
@@ -496,7 +898,7 @@ function buildJournalForm(castle, travelDate = null) {
         >
         已去過
       </label>
-      <label class="journal-field">
+      <div class="journal-field">
         <span>旅遊日期</span>
         <div class="journal-date-row">
           <input
@@ -515,6 +917,9 @@ function buildJournalForm(castle, travelDate = null) {
             aria-label="快速選擇旅遊日期"
             title="快速選擇旅遊日期"
           ></button>
+          <button class="journal-new-date-button" type="button">
+            新日期
+          </button>
           <input
             class="journal-date-picker"
             type="date"
@@ -522,8 +927,11 @@ function buildJournalForm(castle, travelDate = null) {
             tabindex="-1"
             aria-hidden="true"
           >
+          <button class="journal-save" type="submit">
+            儲存筆記
+          </button>
         </div>
-      </label>
+      </div>
       <div class="journal-composer">
         <textarea
           class="journal-text"
@@ -533,17 +941,23 @@ function buildJournalForm(castle, travelDate = null) {
         >${escapeHtml(journal.journal_text)}</textarea>
         ${renderJournalImageEditor(journal)}
       </div>
-      <div class="journal-actions">
-        <button class="journal-save" type="submit">
-          儲存手帳
-        </button>
-      </div>
+      ${renderRecommendationEditor(journal)}
       <div class="journal-message"></div>
     </form>
   `;
 }
 
 function buildPopupShell(castle, content) {
+  return `
+    <div class="castle-popup" data-castle-id="${castle.id}">
+      ${buildCastlePanelHeader(castle)}
+      ${content}
+    </div>
+  `;
+}
+
+function buildCastlePanelHeader(castle, options = {}) {
+  const showTitle = options.showTitle ?? true;
   const wikipediaUrl = buildWikipediaUrl(castle);
   const displayName = escapeHtml(getCastleDisplayName(castle));
   const castleNameMarkup = castle.official_url
@@ -573,29 +987,62 @@ function buildPopupShell(castle, content) {
     `
     : "";
   return `
-    <div class="castle-popup" data-castle-id="${castle.id}">
-      ${imageMarkup}
-      ${castleNameMarkup}
-      <span>${escapeHtml(castle.address)}</span>
-      ${content}
+    ${imageMarkup}
+    ${showTitle ? castleNameMarkup : ""}
+    <span>${escapeHtml(castle.address)}</span>
+  `;
+}
+
+function renderJournalSideTitle(castle) {
+  const displayName = escapeHtml(getCastleDisplayName(castle));
+  if (!castle.official_url) {
+    return displayName;
+  }
+  return `
+    <a
+      class="journal-side-title-link"
+      href="${escapeHtml(castle.official_url)}"
+      target="_blank"
+      rel="noopener noreferrer"
+      title="開啟 ${escapeHtml(castle.name)} 的官方介紹頁"
+    >
+      ${displayName}
+    </a>
+  `;
+}
+
+function renderPopupActions(castle, options = {}) {
+  const showRecordsButton = options.showRecordsButton ?? true;
+  const showJournalButton = (
+    (options.showJournalButton ?? true)
+    && currentAuth.authenticated
+  );
+  return `
+    <div class="popup-actions">
+      ${showRecordsButton ? `
+        <button class="popup-action-button show-castle-records" type="button">
+          顯示最新紀錄
+        </button>
+      ` : ""}
+      ${showJournalButton ? `
+        <button class="popup-action-button show-journal-form" type="button">
+          輸入筆記
+        </button>
+      ` : ""}
+      <a
+        class="popup-action-button"
+        href="${escapeHtml(buildCastleJournalPageUrl(castle.id))}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        觀看所有紀錄
+      </a>
     </div>
   `;
 }
 
 function buildPopupActions(castle) {
-  return buildPopupShell(
-    castle,
-    `
-      <div class="popup-actions">
-        <button class="popup-action-button show-castle-records" type="button">
-          顯示最新紀錄
-        </button>
-        <button class="popup-action-button show-journal-form" type="button">
-          輸入手帳
-        </button>
-      </div>
-    `,
-  );
+  return buildPopupShell(castle, renderPopupActions(castle));
 }
 
 function buildPopupRecords(castle) {
@@ -606,11 +1053,17 @@ function buildPopupRecords(castle) {
 }
 
 function buildPopupForm(castle) {
-  return buildPopupShell(castle, buildJournalForm(castle));
+  return buildPopupShell(
+    castle,
+    `${renderPopupActions(castle, { showJournalButton: false })}${buildJournalForm(castle)}`,
+  );
 }
 
 function buildPopupFormForDate(castle, travelDate) {
-  return buildPopupShell(castle, buildJournalForm(castle, travelDate));
+  return buildPopupShell(
+    castle,
+    `${renderPopupActions(castle, { showJournalButton: false })}${buildJournalForm(castle, travelDate)}`,
+  );
 }
 
 function buildPopup(castle) {
@@ -621,33 +1074,164 @@ function buildPopup(castle) {
     );
   }
   if (currentAuth.authenticated) {
-    return buildPopupActions(castle);
+    return buildPopupForm(castle);
   }
   return buildPopupRecords(castle);
 }
 
 function renderCastleRecords(records) {
   if (records.length === 0) {
-    return '<div class="popup-record-list">尚無手帳紀錄</div>';
+    return '<div class="popup-record-list">尚無筆記紀錄</div>';
   }
 
-  const items = records.map((record) => `
-    <article class="popup-record">
-      <div class="popup-record-meta">
-        ${escapeHtml(record.user_display_name)}
-        ・旅遊日期 ${escapeHtml(record.travel_date)}
-        ・更新 ${escapeHtml(formatUpdatedAt(record.updated_at))}
-      </div>
-      <div class="popup-record-text">
-        ${escapeHtml(record.journal_text)}
-      </div>
-      <button class="popup-record-expand" type="button" hidden>
-        .....
+  const items = records.map((record, index) => `
+    <article class="popup-record is-collapsible">
+      <button
+        class="popup-record-summary"
+        type="button"
+        aria-expanded="false"
+        data-record-index="${index}"
+      >
+        <span class="popup-record-meta">
+          ${escapeHtml(record.user_display_name)}
+          ・旅遊日期 ${escapeHtml(record.travel_date)}
+        </span>
+        <span class="popup-record-summary-text">
+          ${escapeHtml(record.journal_text || "尚未填寫筆記內容")}
+        </span>
       </button>
-      ${renderJournalImages(getJournalImageUrls(record), "popup-record-images")}
+      <div class="popup-record-details" hidden>
+        <div class="popup-record-meta">
+          更新 ${escapeHtml(formatUpdatedAt(record.updated_at))}
+        </div>
+        <div class="popup-record-text">
+          ${escapeHtml(record.journal_text || "尚未填寫筆記內容")}
+        </div>
+        ${renderJournalImages(getJournalImageUrls(record), "popup-record-images")}
+      </div>
     </article>
   `);
   return `<div class="popup-record-list is-single-column">${items.join("")}</div>`;
+}
+
+function renderJournalSideRecords(records) {
+  if (records.length === 0) {
+    return '<div class="activity-empty">尚無筆記紀錄</div>';
+  }
+
+  return records.map((record) => `
+    <article class="popup-record is-expanded">
+      <div class="popup-record-meta">
+        ${escapeHtml(record.user_display_name || currentAuth.user?.display_name || "旅人")}
+        ・旅遊日期 ${escapeHtml(record.travel_date || "")}
+      </div>
+      <div class="popup-record-meta">
+        ${record.updated_at ? `更新 ${escapeHtml(formatUpdatedAt(record.updated_at))}` : ""}
+      </div>
+      <div class="popup-record-text">
+        ${escapeHtml(record.journal_text || "尚未填寫筆記內容")}
+      </div>
+      ${renderJournalImages(getJournalImageUrls(record), "popup-record-images")}
+    </article>
+  `).join("");
+}
+
+function centerCastleOnMap(castleId) {
+  const castle = castleById.get(castleId);
+  if (!castle) {
+    return;
+  }
+  ensureCastleMarkerVisible(castleId);
+  showSelectedCastleLabel(castleId);
+  map.closePopup();
+  map.setView(
+    [castle.latitude, castle.longitude],
+    Math.max(map.getZoom(), 7),
+    { animate: true },
+  );
+}
+
+function openJournalSidePanel(castle, records, subtitle = "") {
+  journalSideTitle.innerHTML = renderJournalSideTitle(castle);
+  journalSideSubtitle.textContent = subtitle;
+  journalSideContent.innerHTML = `
+    <div class="castle-popup" data-castle-id="${castle.id}">
+      ${buildCastlePanelHeader(castle, { showTitle: false })}
+      ${renderPopupActions(castle, { showRecordsButton: false })}
+      ${renderJournalSideRecords(records)}
+    </div>
+  `;
+  mapViewState.showJournalSidePanel = true;
+  syncMapViewControls();
+}
+
+function openJournalFormSidePanel(castleId) {
+  const castle = castleById.get(castleId);
+  if (!castle) {
+    return;
+  }
+
+  centerCastleOnMap(castleId);
+  journalSideTitle.innerHTML = renderJournalSideTitle(castle);
+  journalSideSubtitle.textContent = "輸入筆記";
+  journalSideContent.innerHTML = `
+    <div class="castle-popup" data-castle-id="${castle.id}">
+      ${buildCastlePanelHeader(castle, { showTitle: false })}
+      ${renderPopupActions(castle, { showJournalButton: false })}
+      ${buildJournalForm(castle)}
+    </div>
+  `;
+  mapViewState.showJournalSidePanel = true;
+  syncMapViewControls();
+  const form = journalSideContent.querySelector(".journal-form");
+  if (form) {
+    syncJournalImagePreview(form);
+  }
+}
+
+async function openCastleJournalsSidePanel(castleId, travelDate = null) {
+  const castle = castleById.get(castleId);
+  if (!castle) {
+    return;
+  }
+
+  centerCastleOnMap(castleId);
+  journalSideTitle.innerHTML = renderJournalSideTitle(castle);
+  journalSideSubtitle.textContent = travelDate
+    ? `旅遊日期 ${travelDate}`
+    : "";
+  journalSideContent.innerHTML = '<div class="activity-empty">載入中</div>';
+  mapViewState.showJournalSidePanel = true;
+  syncMapViewControls();
+
+  const payload = await requestJson(`/api/v1/journals/castles/${castleId}`);
+  let records = payload.data?.records ?? [];
+  if (travelDate) {
+    records = records.filter((record) => record.travel_date === travelDate);
+  } else {
+    records = records.slice(0, 3);
+  }
+  openJournalSidePanel(
+    castle,
+    records,
+    travelDate ? `旅遊日期 ${travelDate}` : "",
+  );
+}
+
+function openMyJournalSidePanel(castleId, travelDate) {
+  const castle = castleById.get(castleId);
+  if (!castle) {
+    return;
+  }
+
+  const records = getJournalsForCastle(castleId)
+    .filter((journal) => journal.travel_date === travelDate)
+    .map((journal) => ({
+      ...journal,
+      user_display_name: currentAuth.user?.display_name || "我",
+    }));
+  centerCastleOnMap(castleId);
+  openJournalSidePanel(castle, records, `旅遊日期 ${travelDate}`);
 }
 
 function positionCastlePopupBesideMarker(castleId) {
@@ -745,20 +1329,23 @@ async function showCastleRecords(castleId) {
   ensureCastleMarkerVisible(castleId);
   marker.setPopupContent(buildPopupShell(
     castle,
-    '<div class="popup-record-list is-single-column">載入中</div>',
+    `
+      ${currentAuth.authenticated ? renderPopupActions(castle) : ""}
+      <div class="popup-record-list is-single-column">載入中</div>
+    `,
   ));
   openMarkerPopupOnRight(castleId);
 
-  const payload = await requestJson(`/api/v1/journals/castles/${castleId}/latest`);
-  marker.setPopupContent(buildPopupShell(castle, renderCastleRecords(payload.data ?? [])));
+  const payload = await requestJson(`/api/v1/journals/castles/${castleId}/latest?limit=1`);
+  marker.setPopupContent(buildPopupShell(
+    castle,
+    `
+      ${currentAuth.authenticated ? renderPopupActions(castle) : ""}
+      ${renderCastleRecords(payload.data ?? [])}
+    `,
+  ));
   requestAnimationFrame(() => alignOpenPopupToRight(castleId));
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    alignOpenPopupToRight(castleId);
-    const popupElement = marker.getPopup().getElement();
-    if (popupElement) {
-      syncPopupRecordOverflow(popupElement);
-    }
-  }));
+  requestAnimationFrame(() => requestAnimationFrame(() => alignOpenPopupToRight(castleId)));
 }
 
 function showJournalForm(castleId, travelDate = null) {
@@ -810,6 +1397,7 @@ function setAccountViewBanner() {
 async function showAccountMap(userId, displayName) {
   viewedAccountJournalByCastleId.clear();
   viewedAccount = { userId, displayName };
+  mapViewState.showAccountPrefectureLegend = true;
   setAccountViewBanner();
   refreshAllMarkers();
 
@@ -832,14 +1420,19 @@ async function showAccountMap(userId, displayName) {
   });
   refreshAllMarkers();
   syncCastleSeriesFilter();
+  refreshAdministrativeAreaStyles();
+  syncMapViewControls();
 }
 
 function closeAccountMap() {
   viewedAccount = null;
   viewedAccountJournalByCastleId.clear();
+  mapViewState.showAccountPrefectureLegend = false;
   setAccountViewBanner();
   refreshAllMarkers();
   syncCastleSeriesFilter();
+  refreshAdministrativeAreaStyles();
+  syncMapViewControls();
 }
 
 function formatUpdatedAt(value) {
@@ -871,7 +1464,7 @@ function renderActivityList(activities) {
           <strong>${escapeHtml(activity.user_display_name)}</strong>
           更新了
           <strong>${escapeHtml(activity.castle_name)}</strong>
-          的手帳
+          的筆記
         </div>
         <div class="activity-trip-date">
           旅遊日期：${escapeHtml(activity.travel_date)}
@@ -916,7 +1509,7 @@ function renderPopularCastles() {
         </div>
         <div class="popular-count">
           ${escapeHtml(castle.prefecture || "縣市未明")}
-          ・${castle.journal_count} 筆手帳
+          ・${castle.journal_count} 筆筆記
         </div>
       </button>
     `;
@@ -1017,6 +1610,9 @@ async function loadAccountRankings() {
 }
 
 function syncMapViewControls() {
+  if (!currentAuth.authenticated) {
+    mapViewState.showUnvisitedMarkers = true;
+  }
   document.body.classList.toggle(
     "is-castle-labels-hidden",
     !mapViewState.showCastleLabels,
@@ -1030,6 +1626,10 @@ function syncMapViewControls() {
   activityPanel.hidden = !mapViewState.showActivityPanel;
   accountRankingPanel.hidden = !mapViewState.showAccountRankingPanel;
   journalSidePanel.hidden = !mapViewState.showJournalSidePanel;
+  accountPrefectureLegend.hidden = !(
+    viewedAccount && mapViewState.showAccountPrefectureLegend
+  );
+  popularityLegend.hidden = !mapViewState.showPopularityLegend;
   leftToolDrawer.classList.toggle(
     "is-collapsed",
     !mapViewState.showLeftToolDrawer,
@@ -1046,13 +1646,38 @@ function syncMapViewControls() {
     "aria-expanded",
     String(mapViewState.showRightRankDrawer),
   );
+  toggleLeftToolDrawerButton.classList.toggle(
+    "is-active",
+    mapViewState.showLeftToolDrawer,
+  );
+  toggleRightRankDrawerButton.classList.toggle(
+    "is-active",
+    mapViewState.showRightRankDrawer,
+  );
   toggleCastleLabelsButton.classList.toggle(
     "is-active",
     mapViewState.showCastleLabels,
   );
+  toggleRailwayLayerButton.classList.toggle(
+    "is-active",
+    mapViewState.showRailwayLayer,
+  );
+  toggleRegionColorsButton.classList.toggle(
+    "is-active",
+    mapViewState.showRegionColors,
+  );
   toggleVisitedMarkersButton.classList.toggle(
     "is-active",
-    mapViewState.showUnvisitedMarkers,
+    !mapViewState.showUnvisitedMarkers,
+  );
+  toggleVisitedMarkersButton.disabled = !currentAuth.authenticated;
+  toggleVisitedMarkersButton.setAttribute(
+    "aria-disabled",
+    String(!currentAuth.authenticated),
+  );
+  togglePopularityLegendButton.classList.toggle(
+    "is-active",
+    mapViewState.showPopularityLegend,
   );
   toggleActivityPanelButton.classList.toggle(
     "is-active",
@@ -1077,6 +1702,12 @@ function syncMapViewControls() {
   cycleCastleSeriesFilterButton.textContent = (
     `顯示城堡：${getCastleSeriesFilterLabel()}`
   );
+  if (mapViewState.showRailwayLayer && !map.hasLayer(railwayLayer)) {
+    railwayLayer.addTo(map);
+  } else if (!mapViewState.showRailwayLayer && map.hasLayer(railwayLayer)) {
+    map.removeLayer(railwayLayer);
+  }
+  refreshAdministrativeAreaStyles();
   syncCastleSeriesFilter();
 }
 
@@ -1115,12 +1746,69 @@ function ensureCastleMarkerVisible(castleId) {
   }
 }
 
+function showSelectedCastleLabel(castleId) {
+  if (selectedCastleLabelId !== null && selectedCastleLabelId !== castleId) {
+    markerByCastleId
+      .get(selectedCastleLabelId)
+      ?.getTooltip()
+      ?.getElement()
+      ?.classList.remove("is-selected-castle-label");
+  }
+
+  selectedCastleLabelId = castleId;
+  const marker = markerByCastleId.get(castleId);
+  marker?.openTooltip();
+  marker
+    ?.getTooltip()
+    ?.getElement()
+    ?.classList.add("is-selected-castle-label");
+}
+
 function closeFloatingPanels() {
   mapViewState.showActivityPanel = false;
   mapViewState.showPopularPanel = false;
   mapViewState.showMyRecordsPanel = false;
   mapViewState.showAccountRankingPanel = false;
   mapViewState.showJournalSidePanel = false;
+  mapViewState.showPopularityLegend = false;
+}
+
+function closeSideListPanels() {
+  mapViewState.showActivityPanel = false;
+  mapViewState.showPopularPanel = false;
+  mapViewState.showMyRecordsPanel = false;
+  mapViewState.showAccountRankingPanel = false;
+}
+
+function closeSideListPanelsExcept(panelName) {
+  if (panelName !== "activity") {
+    mapViewState.showActivityPanel = false;
+  }
+  if (panelName !== "popular") {
+    mapViewState.showPopularPanel = false;
+  }
+  if (panelName !== "myRecords") {
+    mapViewState.showMyRecordsPanel = false;
+  }
+  if (panelName !== "accountRanking") {
+    mapViewState.showAccountRankingPanel = false;
+  }
+}
+
+function alignSideListPanelToButton(buttonElement) {
+  const buttonRect = buttonElement.getBoundingClientRect();
+  const topAnchorRect = toggleCastleLabelsButton.getBoundingClientRect();
+  const panelLeft = window.innerWidth <= 640
+    ? 10
+    : Math.min(buttonRect.right + 8, window.innerWidth - 376);
+  document.documentElement.style.setProperty(
+    "--side-panel-top",
+    `${Math.round(topAnchorRect.top)}px`,
+  );
+  document.documentElement.style.setProperty(
+    "--side-panel-left",
+    `${Math.max(10, Math.round(panelLeft))}px`,
+  );
 }
 
 async function requestJson(url, options = {}) {
@@ -1150,6 +1838,7 @@ async function loadAuth() {
     loginLink.hidden = true;
     logoutButton.hidden = false;
     syncAuthRankBadge();
+    syncMapViewControls();
     return;
   }
 
@@ -1159,12 +1848,14 @@ async function loadAuth() {
   loginLink.hidden = !currentAuth.google_login_enabled;
   logoutButton.hidden = true;
   syncAuthRankBadge();
+  syncMapViewControls();
 }
 
 async function loadJournals() {
   journalByCastleId.clear();
   if (!currentAuth.authenticated) {
     syncAuthRankBadge();
+    syncMapViewControls();
     return;
   }
 
@@ -1197,8 +1888,13 @@ async function loadCastles() {
     marker.off("click", marker._openPopup, marker);
     marker.on("click", (event) => {
       L.DomEvent.stop(event);
-      marker.setPopupContent(buildPopup(castle));
-      openMarkerPopupOnRight(castle.id);
+      openCastleJournalsSidePanel(castle.id).catch(() => {
+        journalSideTitle.textContent = getCastleDisplayName(castle);
+        journalSideSubtitle.textContent = "";
+        journalSideContent.innerHTML = '<div class="activity-empty">筆記載入失敗</div>';
+        mapViewState.showJournalSidePanel = true;
+        syncMapViewControls();
+      });
     });
     marker.on("popupopen", () => {
       if (!viewedAccount && !currentAuth.authenticated) {
@@ -1226,12 +1922,59 @@ async function loadCastles() {
   });
 
   syncCastleSeriesFilter();
-  map.setView(OSAKA_CASTLE_CENTER, DEFAULT_ZOOM);
+  map.setView(DEFAULT_MAP_CENTER, DEFAULT_ZOOM);
 }
 
 async function loadLatestActivities() {
   const payload = await requestJson("/api/v1/journals/latest?limit=20");
-  renderActivityList(payload.data ?? []);
+  latestActivities = payload.data ?? [];
+  renderActivityList(latestActivities);
+}
+
+async function loadJournalStats() {
+  try {
+    const payload = await requestJsonWithRetry("/api/v1/journals/stats");
+    const stats = payload.data;
+    journalStatsElement.textContent = (
+      `筆記人數 ${stats.journal_user_count} 人・筆記 ${stats.journal_count} 筆`
+    );
+  } catch {
+    const fallbackJournalCount = Array.from(castleById.values()).reduce(
+      (total, castle) => total + Number(castle.journal_count || 0),
+      0,
+    );
+    let fallbackUserLabel = "--";
+    try {
+      const rankingsPayload = await requestJson(
+        "/api/v1/journals/accounts/rankings?limit=30",
+      );
+      const rankings = rankingsPayload.data ?? [];
+      fallbackUserLabel = rankings.length >= 30
+        ? `${rankings.length}+`
+        : String(rankings.length);
+    } catch {
+      fallbackUserLabel = "--";
+    }
+    journalStatsElement.textContent = (
+      fallbackJournalCount > 0
+        ? `筆記人數 ${fallbackUserLabel} 人・筆記 ${fallbackJournalCount} 筆`
+        : "筆記統計暫無資料"
+    );
+  }
+}
+
+async function requestJsonWithRetry(url, options = {}, retryCount = 1) {
+  try {
+    return await requestJson(url, options);
+  } catch (error) {
+    if (retryCount <= 0) {
+      throw error;
+    }
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 450);
+    });
+    return requestJsonWithRetry(url, options, retryCount - 1);
+  }
 }
 
 async function loadAdministrativeAreas() {
@@ -1243,14 +1986,8 @@ async function loadAdministrativeAreas() {
   }
 
   const geojson = await response.json();
-  L.geoJSON(geojson, {
-    style: {
-      color: "#8a969d",
-      fillColor: "#e9efe3",
-      fillOpacity: 1,
-      opacity: 1,
-      weight: 0.9,
-    },
+  administrativeAreaLayer = L.geoJSON(geojson, {
+    style: getAdministrativeAreaStyle,
     onEachFeature: (feature, layer) => {
       const prefectureName = feature.properties?.nam_ja;
       if (prefectureName) {
@@ -1280,8 +2017,20 @@ async function saveJournal(form) {
     "existing_image_urls",
     form.elements.existing_image_urls.value || "[]",
   );
+  const recommendationEntries = readJournalRecommendationEntries(form);
+  formData.append(
+    "recommendations_json",
+    JSON.stringify(recommendationEntries.map((entry) => entry.data)),
+  );
   Array.from(form.elements.images.files).forEach((file) => {
     formData.append("images", file);
+  });
+  recommendationEntries.forEach((entry, index) => {
+    Array.from(entry.row.querySelector(".journal-recommendation-image-input").files)
+      .forEach((file) => {
+        formData.append("recommendation_image_indexes", String(index));
+        formData.append("recommendation_images", file);
+      });
   });
 
   const payload = await requestJson(`/api/v1/me/journals/${castleId}`, {
@@ -1295,6 +2044,7 @@ async function saveJournal(form) {
   renderMyRecords();
   await loadLatestActivities();
   messageElement.textContent = "已儲存";
+  markerByCastleId.get(castleId)?.closePopup();
 }
 
 document.addEventListener("submit", (event) => {
@@ -1318,6 +2068,403 @@ function readExistingImageUrls(form) {
   } catch {
     return [];
   }
+}
+
+function readJournalRecommendationEntries(form) {
+  return Array.from(form.querySelectorAll(".journal-recommendation-row"))
+    .map((row) => ({
+      row,
+      data: {
+        name: row.querySelector(".journal-recommendation-name")?.value.trim() || "",
+        category: (
+          row.querySelector(".journal-recommendation-category")?.value || "other"
+        ),
+        description: (
+          row.querySelector(".journal-recommendation-description")?.value.trim() || ""
+        ),
+        google_maps_url: (
+          row.querySelector(".journal-recommendation-map-url")?.value.trim() || ""
+        ),
+        existing_image_urls: readRecommendationExistingImageUrls(row),
+        address: row.querySelector(".journal-recommendation-address")?.value.trim() || "",
+        latitude: row.querySelector(".journal-recommendation-latitude")?.value || "",
+        longitude: row.querySelector(".journal-recommendation-longitude")?.value || "",
+        osm_type: row.querySelector(".journal-recommendation-osm-type")?.value || "",
+        osm_id: row.querySelector(".journal-recommendation-osm-id")?.value || "",
+        osm_url: row.querySelector(".journal-recommendation-osm-url")?.value.trim() || "",
+        rating: row.querySelector(".journal-recommendation-rating-input")?.value || "",
+      },
+    }))
+    .filter((entry) => (
+      entry.data.name
+      || entry.data.description
+      || entry.data.google_maps_url
+      || entry.data.osm_url
+      || entry.data.existing_image_urls.length > 0
+      || entry.row.querySelector(".journal-recommendation-image-input").files.length > 0
+    ));
+}
+
+function readRecommendationExistingImageUrls(row) {
+  try {
+    const value = JSON.parse(
+      row.querySelector(".journal-recommendation-existing-images")?.value || "[]",
+    );
+    return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function isJournalFormDirty(form, castleId) {
+  const loadedTravelDate = form.dataset.loadedTravelDate || form.elements.travel_date.value;
+  const loadedJournal = getJournalForCastleDate(castleId, loadedTravelDate);
+  const currentRecommendations = readJournalRecommendationEntries(form).map(
+    (entry) => entry.data,
+  );
+
+  return (
+    form.elements.visited.checked !== Boolean(loadedJournal.visited)
+    || form.elements.journal_text.value !== loadedJournal.journal_text
+    || JSON.stringify(readExistingImageUrls(form)) !== JSON.stringify(
+      getJournalImageUrls(loadedJournal),
+    )
+    || form.elements.images.files.length > 0
+    || JSON.stringify(currentRecommendations) !== JSON.stringify(
+      getJournalRecommendations(loadedJournal).map((recommendation) => ({
+        name: recommendation.name || "",
+        category: recommendation.category || "other",
+        description: recommendation.description || "",
+        google_maps_url: getRecommendationMapUrl(recommendation),
+        existing_image_urls: getJournalImageUrls(recommendation),
+        address: recommendation.address || "",
+        latitude: recommendation.latitude || "",
+        longitude: recommendation.longitude || "",
+        osm_type: recommendation.osm_type || "",
+        osm_id: recommendation.osm_id || "",
+        osm_url: recommendation.osm_url || "",
+        rating: recommendation.rating ? String(recommendation.rating) : "",
+      })),
+    )
+  );
+}
+
+function loadJournalIntoForm(form, journal) {
+  form.dataset.loadedTravelDate = journal.travel_date;
+  form.elements.travel_date.value = journal.travel_date;
+  const datePicker = form.querySelector(".journal-date-picker");
+  if (datePicker) {
+    datePicker.value = journal.travel_date;
+  }
+  form.elements.visited.checked = journal.visited;
+  form.elements.journal_text.value = journal.journal_text;
+  setExistingImageUrls(form, getJournalImageUrls(journal));
+  syncRecommendationEditor(form, getJournalRecommendations(journal));
+  form.elements.images.value = "";
+  syncJournalImagePreview(form);
+}
+
+function resetJournalFormForNewDate(form, castleId) {
+  loadJournalIntoForm(form, getEmptyJournal(castleId));
+  form.querySelector(".journal-message").textContent = "已清空，請選擇新的旅遊日期";
+}
+
+function syncJournalDate(form, castleId, travelDate) {
+  const datePicker = form.querySelector(".journal-date-picker");
+  if (datePicker) {
+    datePicker.value = travelDate;
+  }
+  if (isJournalFormDirty(form, castleId)) {
+    return;
+  }
+  loadJournalIntoForm(form, getJournalForCastleDate(castleId, travelDate));
+}
+
+function syncRecommendationEditor(form, recommendations) {
+  const list = form.querySelector(".journal-recommendation-list");
+  if (!list) {
+    return;
+  }
+  list.innerHTML = recommendations.map(renderRecommendationEditorRow).join("");
+}
+
+function setRecommendationExistingImageUrls(row, imageUrls) {
+  row.querySelector(".journal-recommendation-existing-images").value = (
+    JSON.stringify(imageUrls)
+  );
+}
+
+function syncRecommendationImagePreview(row) {
+  const preview = row.querySelector(".journal-recommendation-image-preview");
+  const input = row.querySelector(".journal-recommendation-image-input");
+  const existingImageUrls = readRecommendationExistingImageUrls(row);
+  const selectedFiles = Array.from(input.files);
+  const existingItems = renderRecommendationImagePreview(existingImageUrls);
+  const newItems = selectedFiles.map((file, index) => `
+    <figure class="journal-recommendation-image-item">
+      <img src="${escapeHtml(URL.createObjectURL(file))}" alt="新推薦圖片 ${index + 1}">
+      <button
+        class="journal-recommendation-image-remove"
+        type="button"
+        data-image-kind="new"
+        data-image-index="${index}"
+        aria-label="移除推薦圖片"
+      >
+        ×
+      </button>
+    </figure>
+  `).join("");
+  preview.innerHTML = `${existingItems}${newItems}`;
+}
+
+function getRecommendationCategoryLabel(category) {
+  const match = RECOMMENDATION_CATEGORIES.find(([value]) => value === category);
+  return match ? match[1] : "其他";
+}
+
+function ensurePoiPicker() {
+  let picker = document.querySelector("#poi-picker");
+  if (picker) {
+    return picker;
+  }
+
+  picker = document.createElement("section");
+  picker.id = "poi-picker";
+  picker.className = "poi-picker";
+  picker.hidden = true;
+  picker.innerHTML = `
+    <div class="poi-picker-backdrop" data-poi-picker-close></div>
+    <div class="poi-picker-dialog" role="dialog" aria-modal="true">
+      <div class="poi-picker-header">
+        <div>
+          <h2>選取店家/景點</h2>
+          <p class="poi-picker-status">在地圖上點選店家、景點或任一位置</p>
+          <div class="poi-picker-radius" aria-label="搜尋半徑">
+            ${POI_SEARCH_RADIUS_OPTIONS.map((radius) => `
+              <button
+                class="poi-radius-button ${radius === DEFAULT_POI_SEARCH_RADIUS_METERS ? "is-active" : ""}"
+                type="button"
+                data-poi-radius="${radius}"
+              >
+                ${radius}m
+              </button>
+            `).join("")}
+          </div>
+        </div>
+        <button
+          class="poi-picker-close"
+          type="button"
+          data-poi-picker-close
+          aria-label="關閉選取地點"
+        >
+          ×
+        </button>
+      </div>
+      <div id="poi-picker-map" class="poi-picker-map"></div>
+      <div class="poi-picker-results" hidden>
+        <div class="poi-picker-results-list"></div>
+      </div>
+    </div>
+  `;
+  document.body.append(picker);
+  return picker;
+}
+
+function setPoiPickerStatus(message) {
+  ensurePoiPicker().querySelector(".poi-picker-status").textContent = message;
+}
+
+async function openPoiPicker(row) {
+  const form = row.closest(".journal-form");
+  const popupElement = form.closest(".castle-popup");
+  const castleId = Number(popupElement.dataset.castleId);
+  const castle = castleById.get(castleId);
+  if (!castle) {
+    return;
+  }
+
+  poiPickerState.row = row;
+  poiPickerState.searchRadiusMeters = DEFAULT_POI_SEARCH_RADIUS_METERS;
+  const picker = ensurePoiPicker();
+  picker.hidden = false;
+  setPoiPickerStatus("在地圖上點選店家、景點或任一位置");
+  syncPoiRadiusButtons();
+  renderPoiChoices([]);
+
+  if (!poiPickerState.map) {
+    poiPickerState.map = L.map("poi-picker-map", {
+      attributionControl: true,
+      zoomControl: true,
+    });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+      maxZoom: 19,
+    }).addTo(poiPickerState.map);
+    poiPickerState.markerLayer = L.layerGroup().addTo(poiPickerState.map);
+    poiPickerState.map.on("click", (event) => selectPoiFromMapClick(event.latlng));
+  }
+
+  poiPickerState.map.setView([castle.latitude, castle.longitude], 15);
+  poiPickerState.markerLayer.clearLayers();
+  L.marker([castle.latitude, castle.longitude])
+    .bindTooltip(getCastleDisplayName(castle), { permanent: false })
+    .addTo(poiPickerState.markerLayer);
+  requestAnimationFrame(() => poiPickerState.map.invalidateSize());
+}
+
+async function selectPoiFromMapClick(latlng) {
+  poiPickerState.clickedLatLng = latlng;
+  if (poiPickerState.selectedMarker) {
+    poiPickerState.markerLayer.removeLayer(poiPickerState.selectedMarker);
+  }
+  poiPickerState.selectedMarker = L.marker([latlng.lat, latlng.lng]).addTo(
+    poiPickerState.markerLayer,
+  );
+  searchPoiPlacesAtLatLng(latlng).catch(() => {});
+}
+
+async function searchPoiPlacesAtLatLng(latlng) {
+  const radius = poiPickerState.searchRadiusMeters;
+  setPoiPickerStatus(`搜尋點選位置 ${radius}m 內的 POI`);
+  renderPoiChoices([]);
+
+  try {
+    const payload = await requestJson(
+      `/api/v1/castles/nearby-pois?lat=${encodeURIComponent(latlng.lat)}&lon=${encodeURIComponent(latlng.lng)}&radius_m=${radius}`,
+    );
+    renderPoiChoices(payload.data ?? []);
+    setPoiPickerStatus(
+      (payload.data ?? []).length > 0
+        ? `找到 ${(payload.data ?? []).length} 個附近地點，依距離排序`
+        : `${radius}m 內找不到 POI，可放大半徑或直接使用此座標`,
+    );
+  } catch (error) {
+    renderPoiChoices([]);
+    setPoiPickerStatus(error.message || "附近地點載入失敗，可直接使用此座標");
+  }
+}
+
+function setPoiSearchRadius(radiusMeters) {
+  if (!POI_SEARCH_RADIUS_OPTIONS.includes(radiusMeters)) {
+    return;
+  }
+  poiPickerState.searchRadiusMeters = radiusMeters;
+  syncPoiRadiusButtons();
+  if (poiPickerState.clickedLatLng) {
+    searchPoiPlacesAtLatLng(poiPickerState.clickedLatLng).catch(() => {});
+    return;
+  }
+  setPoiPickerStatus("在地圖上點選店家、景點或任一位置");
+}
+
+function syncPoiRadiusButtons() {
+  const picker = ensurePoiPicker();
+  picker.querySelectorAll(".poi-radius-button").forEach((button) => {
+    button.classList.toggle(
+      "is-active",
+      Number(button.dataset.poiRadius) === poiPickerState.searchRadiusMeters,
+    );
+  });
+}
+
+function renderPoiChoices(places) {
+  const picker = ensurePoiPicker();
+  const results = picker.querySelector(".poi-picker-results");
+  const list = picker.querySelector(".poi-picker-results-list");
+  if (!poiPickerState.clickedLatLng && places.length === 0) {
+    results.hidden = true;
+    list.innerHTML = "";
+    return;
+  }
+
+  const coordinateChoice = poiPickerState.clickedLatLng
+    ? `
+      <button class="poi-choice-button" type="button" data-poi-choice-index="-1">
+        <strong>只使用此座標</strong>
+        <span>
+          ${poiPickerState.clickedLatLng.lat.toFixed(6)},
+          ${poiPickerState.clickedLatLng.lng.toFixed(6)}
+        </span>
+      </button>
+    `
+    : "";
+  const placeChoices = places.map((place, index) => `
+    <button class="poi-choice-button" type="button" data-poi-choice-index="${index}">
+      <strong>${escapeHtml(place.name)}</strong>
+      <span>
+        ${escapeHtml(getRecommendationCategoryLabel(place.category))}
+        ・約 ${escapeHtml(place.distance_meters)}m
+      </span>
+      ${place.address ? `<small>${escapeHtml(place.address)}</small>` : ""}
+    </button>
+  `).join("");
+
+  results.hidden = false;
+  list.dataset.places = JSON.stringify(places);
+  list.innerHTML = `${placeChoices}${coordinateChoice}`;
+}
+
+function selectPoiChoice(choiceButton) {
+  const index = Number(choiceButton.dataset.poiChoiceIndex);
+  const places = JSON.parse(
+    choiceButton.closest(".poi-picker-results-list").dataset.places || "[]",
+  );
+  if (index >= 0) {
+    selectPoiPlace(places[index], places[index].distance_meters);
+    return;
+  }
+
+  const latlng = poiPickerState.clickedLatLng;
+  if (!latlng) {
+    return;
+  }
+  selectPoiPlace({
+    name: "自選地點",
+    category: "other",
+    latitude: latlng.lat,
+    longitude: latlng.lng,
+    distance_meters: 0,
+    address: "",
+    osm_type: "",
+    osm_id: "",
+    osm_url: `https://www.openstreetmap.org/?mlat=${latlng.lat}&mlon=${latlng.lng}#map=18/${latlng.lat}/${latlng.lng}`,
+  });
+}
+
+function selectPoiPlace(place, matchDistanceMeters = null) {
+  const row = poiPickerState.row;
+  if (!row) {
+    return;
+  }
+  row.querySelector(".journal-recommendation-name").value = place.name;
+  row.querySelector(".journal-recommendation-category").value = place.category;
+  row.querySelector(".journal-recommendation-map-url").value = (
+    getGoogleMapsUrl(place.latitude, place.longitude) || place.osm_url
+  );
+  row.querySelector(".journal-recommendation-address").value = place.address || "";
+  row.querySelector(".journal-recommendation-latitude").value = place.latitude;
+  row.querySelector(".journal-recommendation-longitude").value = place.longitude;
+  row.querySelector(".journal-recommendation-osm-type").value = place.osm_type;
+  row.querySelector(".journal-recommendation-osm-id").value = place.osm_id;
+  row.querySelector(".journal-recommendation-osm-url").value = place.osm_url;
+  row.querySelector(".journal-picked-place").textContent = (
+    matchDistanceMeters === null
+      ? `${Number(place.latitude).toFixed(6)}, ${Number(place.longitude).toFixed(6)}`
+      : `${place.name}・點位旁約 ${Math.round(matchDistanceMeters)}m`
+  );
+  closePoiPicker();
+}
+
+function closePoiPicker() {
+  const picker = document.querySelector("#poi-picker");
+  if (!picker) {
+    return;
+  }
+  picker.hidden = true;
+  poiPickerState.row = null;
+  poiPickerState.clickedLatLng = null;
+  poiPickerState.searchRadiusMeters = DEFAULT_POI_SEARCH_RADIUS_METERS;
+  renderPoiChoices([]);
 }
 
 function setExistingImageUrls(form, imageUrls) {
@@ -1347,7 +2494,7 @@ function syncJournalImagePreview(form) {
   const nextFiles = Array.from(input.files);
   const existingItems = existingImageUrls.map((imageUrl, index) => `
     <figure class="journal-image-preview-item">
-      <img src="${escapeHtml(imageUrl)}" alt="已上傳手帳圖片">
+      <img src="${escapeHtml(imageUrl)}" alt="已上傳筆記圖片">
       <button
         class="journal-image-remove"
         type="button"
@@ -1359,7 +2506,7 @@ function syncJournalImagePreview(form) {
   `);
   const newItems = nextFiles.map((file, index) => `
     <figure class="journal-image-preview-item">
-      <img src="${escapeHtml(URL.createObjectURL(file))}" alt="新手帳圖片預覽">
+      <img src="${escapeHtml(URL.createObjectURL(file))}" alt="新筆記圖片預覽">
       <button
         class="journal-image-remove"
         type="button"
@@ -1374,14 +2521,22 @@ function syncJournalImagePreview(form) {
 }
 
 document.addEventListener("click", (event) => {
-  const expandButton = event.target.closest(".popup-record-expand");
-  if (!expandButton) {
+  const summaryButton = event.target.closest(".popup-record-summary");
+  if (!summaryButton) {
     return;
   }
 
-  const recordElement = expandButton.closest(".popup-record");
-  recordElement.classList.add("is-expanded");
-  expandButton.hidden = true;
+  const recordElement = summaryButton.closest(".popup-record");
+  const detailElement = recordElement.querySelector(".popup-record-details");
+  const isExpanded = !recordElement.classList.contains("is-expanded");
+  recordElement.classList.toggle("is-expanded", isExpanded);
+  summaryButton.setAttribute("aria-expanded", String(isExpanded));
+  detailElement.hidden = !isExpanded;
+  const popupElement = recordElement.closest(".leaflet-popup");
+  const castleId = Number(recordElement.closest(".castle-popup")?.dataset.castleId);
+  if (popupElement && castleId) {
+    requestAnimationFrame(() => alignOpenPopupToRight(castleId));
+  }
 });
 
 document.addEventListener("click", (event) => {
@@ -1391,7 +2546,7 @@ document.addEventListener("click", (event) => {
   }
 
   const galleryScope = galleryButton.closest(
-    ".popup-record-list, .activity-journal",
+    ".popup-record-list, .activity-journal, .castle-journal-reader",
   ) ?? document;
   const galleryButtons = Array.from(
     galleryScope.querySelectorAll(".journal-gallery-button"),
@@ -1428,6 +2583,12 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  const poiPicker = document.querySelector("#poi-picker");
+  if (poiPicker && !poiPicker.hidden && event.key === "Escape") {
+    closePoiPicker();
+    return;
+  }
+
   if (!siteInfoModal.hidden && event.key === "Escape") {
     closeSiteInfoModal();
     return;
@@ -1459,6 +2620,26 @@ document.addEventListener("click", (event) => {
 }, true);
 
 document.addEventListener("click", (event) => {
+  const recommendationImageRemove = event.target.closest(
+    ".journal-recommendation-image-remove",
+  );
+  if (recommendationImageRemove) {
+    const row = recommendationImageRemove.closest(".journal-recommendation-row");
+    const imageIndex = Number(recommendationImageRemove.dataset.imageIndex);
+    if (recommendationImageRemove.dataset.imageKind === "existing") {
+      const imageUrls = readRecommendationExistingImageUrls(row);
+      imageUrls.splice(imageIndex, 1);
+      setRecommendationExistingImageUrls(row, imageUrls);
+    } else {
+      const input = row.querySelector(".journal-recommendation-image-input");
+      const files = Array.from(input.files);
+      files.splice(imageIndex, 1);
+      setSelectedFiles(input, files);
+    }
+    syncRecommendationImagePreview(row);
+    return;
+  }
+
   const removeButton = event.target.closest(".journal-image-remove");
   if (!removeButton) {
     return;
@@ -1480,40 +2661,114 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  const addButton = event.target.closest(".journal-add-recommendation");
+  if (addButton) {
+    const form = addButton.closest(".journal-form");
+    const list = form.querySelector(".journal-recommendation-list");
+    list.insertAdjacentHTML("beforeend", renderRecommendationEditorRow());
+    return;
+  }
+
+  const removeButton = event.target.closest(".journal-remove-recommendation");
+  if (!removeButton) {
+    return;
+  }
+  removeButton.closest(".journal-recommendation-row")?.remove();
+});
+
+document.addEventListener("click", (event) => {
+  const starButton = event.target.closest(".journal-star-button");
+  if (!starButton) {
+    return;
+  }
+
+  const rating = Number(starButton.dataset.rating);
+  const row = starButton.closest(".journal-recommendation-row");
+  row.querySelector(".journal-recommendation-rating-input").value = rating;
+  row.querySelectorAll(".journal-star-button").forEach((button) => {
+    button.classList.toggle("is-active", Number(button.dataset.rating) <= rating);
+  });
+});
+
+document.addEventListener("click", (event) => {
+  const poiRadiusButton = event.target.closest(".poi-radius-button");
+  if (poiRadiusButton) {
+    setPoiSearchRadius(Number(poiRadiusButton.dataset.poiRadius));
+    return;
+  }
+
+  const poiChoiceButton = event.target.closest(".poi-choice-button");
+  if (poiChoiceButton) {
+    selectPoiChoice(poiChoiceButton);
+    return;
+  }
+
+  const pickPlaceButton = event.target.closest(".journal-pick-place");
+  if (pickPlaceButton) {
+    openPoiPicker(pickPlaceButton.closest(".journal-recommendation-row"));
+    return;
+  }
+
+  if (event.target.closest("[data-poi-picker-close]")) {
+    closePoiPicker();
+  }
+});
+
+document.addEventListener("click", (event) => {
   const recordsButton = event.target.closest(".show-castle-records");
   if (recordsButton) {
     const popupElement = recordsButton.closest(".castle-popup");
-    showCastleRecords(Number(popupElement.dataset.castleId)).catch(() => {});
+    const castleId = Number(popupElement.dataset.castleId);
+    if (recordsButton.closest("#journal-side-panel")) {
+      openCastleJournalsSidePanel(castleId).catch(() => {
+        journalSideContent.innerHTML = '<div class="activity-empty">筆記載入失敗</div>';
+      });
+      return;
+    }
+    showCastleRecords(castleId).catch(() => {});
     return;
   }
 
   const formButton = event.target.closest(".show-journal-form");
   if (formButton) {
     const popupElement = formButton.closest(".castle-popup");
-    showJournalForm(Number(popupElement.dataset.castleId));
+    const castleId = Number(popupElement.dataset.castleId);
+    if (formButton.closest("#journal-side-panel")) {
+      openJournalFormSidePanel(castleId);
+      return;
+    }
+    showJournalForm(castleId);
   }
 });
 
 document.addEventListener("click", (event) => {
   const pickerButton = event.target.closest(".journal-date-picker-button");
-  if (!pickerButton) {
+  if (pickerButton) {
+    const datePicker = pickerButton
+      .closest(".journal-date-row")
+      .querySelector(".journal-date-picker");
+    if (!datePicker) {
+      return;
+    }
+
+    if (typeof datePicker.showPicker === "function") {
+      datePicker.showPicker();
+      return;
+    }
+
+    datePicker.focus();
+    datePicker.click();
     return;
   }
 
-  const datePicker = pickerButton
-    .closest(".journal-date-row")
-    .querySelector(".journal-date-picker");
-  if (!datePicker) {
+  const newDateButton = event.target.closest(".journal-new-date-button");
+  if (!newDateButton) {
     return;
   }
 
-  if (typeof datePicker.showPicker === "function") {
-    datePicker.showPicker();
-    return;
-  }
-
-  datePicker.focus();
-  datePicker.click();
+  const popupElement = newDateButton.closest(".castle-popup");
+  const form = newDateButton.closest(".journal-form");
+  resetJournalFormForNewDate(form, Number(popupElement.dataset.castleId));
 });
 
 activityList.addEventListener("click", (event) => {
@@ -1522,10 +2777,36 @@ activityList.addEventListener("click", (event) => {
     return;
   }
 
-  showCastleRecords(Number(button.dataset.castleId)).catch(() => {});
+  const castleId = Number(button.dataset.castleId);
+  const castle = castleById.get(castleId);
+  const activity = latestActivities[Number(button.dataset.activityIndex)];
+  if (!castle || !activity) {
+    return;
+  }
+  centerCastleOnMap(castleId);
+  openJournalSidePanel(
+    castle,
+    [activity],
+    `旅遊日期 ${activity.travel_date}`,
+  );
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.classList.contains("journal-recommendation-image-input")) {
+    const row = event.target.closest(".journal-recommendation-row");
+    const existingImageCount = readRecommendationExistingImageUrls(row).length;
+    const selectedFiles = Array.from(event.target.files);
+    const availableSlots = MAX_RECOMMENDATION_IMAGES - existingImageCount;
+    if (selectedFiles.length > availableSlots) {
+      setSelectedFiles(event.target, selectedFiles.slice(0, availableSlots));
+      row.closest(".journal-form").querySelector(".journal-message").textContent = (
+        `推薦圖片最多 ${MAX_RECOMMENDATION_IMAGES} 張`
+      );
+    }
+    syncRecommendationImagePreview(row);
+    return;
+  }
+
   if (event.target.classList.contains("journal-image-input")) {
     const form = event.target.closest(".journal-form");
     const existingImageCount = readExistingImageUrls(form).length;
@@ -1534,7 +2815,7 @@ document.addEventListener("change", (event) => {
     if (selectedFiles.length > availableSlots) {
       setSelectedFiles(event.target, selectedFiles.slice(0, availableSlots));
       form.querySelector(".journal-message").textContent = (
-        `手帳圖片最多 ${MAX_JOURNAL_IMAGES} 張`
+        `筆記圖片最多 ${MAX_JOURNAL_IMAGES} 張`
       );
     }
     syncJournalImagePreview(form);
@@ -1543,8 +2824,10 @@ document.addEventListener("change", (event) => {
 
   if (event.target.classList.contains("journal-date-picker")) {
     const form = event.target.closest(".journal-form");
+    const popupElement = event.target.closest(".castle-popup");
+    const castleId = Number(popupElement.dataset.castleId);
     form.elements.travel_date.value = event.target.value;
-    form.elements.travel_date.dispatchEvent(new Event("change", { bubbles: true }));
+    syncJournalDate(form, castleId, event.target.value);
     return;
   }
 
@@ -1555,16 +2838,7 @@ document.addEventListener("change", (event) => {
   const popupElement = event.target.closest(".castle-popup");
   const form = event.target.closest(".journal-form");
   const castleId = Number(popupElement.dataset.castleId);
-  const datePicker = form.querySelector(".journal-date-picker");
-  if (datePicker) {
-    datePicker.value = event.target.value;
-  }
-  const journal = getJournalForCastleDate(castleId, event.target.value);
-  form.elements.visited.checked = journal.visited;
-  form.elements.journal_text.value = journal.journal_text;
-  setExistingImageUrls(form, getJournalImageUrls(journal));
-  form.elements.images.value = "";
-  syncJournalImagePreview(form);
+  syncJournalDate(form, castleId, event.target.value);
 });
 
 accountRankingList.addEventListener("click", (event) => {
@@ -1590,6 +2864,11 @@ accountRankingList.addEventListener("click", (event) => {
 
 closeAccountViewButton.addEventListener("click", () => {
   closeAccountMap();
+});
+
+closeAccountPrefectureLegendButton.addEventListener("click", () => {
+  mapViewState.showAccountPrefectureLegend = false;
+  syncMapViewControls();
 });
 
 toggleLeftToolDrawerButton.addEventListener("click", () => {
@@ -1630,17 +2909,34 @@ toggleCastleLabelsButton.addEventListener("click", () => {
   syncMapViewControls();
 });
 
+toggleRailwayLayerButton.addEventListener("click", () => {
+  mapViewState.showRailwayLayer = !mapViewState.showRailwayLayer;
+  syncMapViewControls();
+});
+
+toggleRegionColorsButton.addEventListener("click", () => {
+  mapViewState.showRegionColors = !mapViewState.showRegionColors;
+  syncMapViewControls();
+});
+
 toggleVisitedMarkersButton.addEventListener("click", () => {
+  if (!currentAuth.authenticated) {
+    return;
+  }
   mapViewState.showUnvisitedMarkers = !mapViewState.showUnvisitedMarkers;
+  syncMapViewControls();
+});
+
+togglePopularityLegendButton.addEventListener("click", () => {
+  mapViewState.showPopularityLegend = !mapViewState.showPopularityLegend;
   syncMapViewControls();
 });
 
 toggleActivityPanelButton.addEventListener("click", async () => {
   mapViewState.showActivityPanel = !mapViewState.showActivityPanel;
   if (mapViewState.showActivityPanel) {
-    mapViewState.showPopularPanel = false;
-    mapViewState.showMyRecordsPanel = false;
-    mapViewState.showAccountRankingPanel = false;
+    alignSideListPanelToButton(toggleActivityPanelButton);
+    closeSideListPanelsExcept("activity");
     mapViewState.showJournalSidePanel = false;
   }
   syncMapViewControls();
@@ -1652,9 +2948,8 @@ toggleActivityPanelButton.addEventListener("click", async () => {
 togglePopularPanelButton.addEventListener("click", () => {
   mapViewState.showPopularPanel = !mapViewState.showPopularPanel;
   if (mapViewState.showPopularPanel) {
-    mapViewState.showActivityPanel = false;
-    mapViewState.showMyRecordsPanel = false;
-    mapViewState.showAccountRankingPanel = false;
+    alignSideListPanelToButton(togglePopularPanelButton);
+    closeSideListPanelsExcept("popular");
     mapViewState.showJournalSidePanel = false;
     renderPopularCastles();
   }
@@ -1664,9 +2959,8 @@ togglePopularPanelButton.addEventListener("click", () => {
 toggleMyRecordsPanelButton.addEventListener("click", () => {
   mapViewState.showMyRecordsPanel = !mapViewState.showMyRecordsPanel;
   if (mapViewState.showMyRecordsPanel) {
-    mapViewState.showActivityPanel = false;
-    mapViewState.showPopularPanel = false;
-    mapViewState.showAccountRankingPanel = false;
+    alignSideListPanelToButton(toggleMyRecordsPanelButton);
+    closeSideListPanelsExcept("myRecords");
     mapViewState.showJournalSidePanel = false;
     renderMyRecords();
   }
@@ -1676,15 +2970,28 @@ toggleMyRecordsPanelButton.addEventListener("click", () => {
 toggleAccountRankingPanelButton.addEventListener("click", async () => {
   mapViewState.showAccountRankingPanel = !mapViewState.showAccountRankingPanel;
   if (mapViewState.showAccountRankingPanel) {
-    mapViewState.showActivityPanel = false;
-    mapViewState.showPopularPanel = false;
-    mapViewState.showMyRecordsPanel = false;
+    closeSideListPanelsExcept("accountRanking");
     mapViewState.showJournalSidePanel = false;
   }
   syncMapViewControls();
   if (mapViewState.showAccountRankingPanel) {
     await loadAccountRankings();
   }
+});
+
+closeActivityPanelButton.addEventListener("click", () => {
+  mapViewState.showActivityPanel = false;
+  syncMapViewControls();
+});
+
+closePopularPanelButton.addEventListener("click", () => {
+  mapViewState.showPopularPanel = false;
+  syncMapViewControls();
+});
+
+closeMyRecordsPanelButton.addEventListener("click", () => {
+  mapViewState.showMyRecordsPanel = false;
+  syncMapViewControls();
 });
 
 closeAccountRankingButton.addEventListener("click", () => {
@@ -1732,7 +3039,9 @@ popularList.addEventListener("click", (event) => {
     return;
   }
 
-  openCastlePopup(Number(button.dataset.castleId), "default", null, true);
+  openCastleJournalsSidePanel(Number(button.dataset.castleId)).catch(() => {
+    journalSideContent.innerHTML = '<div class="activity-empty">筆記載入失敗</div>';
+  });
 });
 
 myRecordsList.addEventListener("click", (event) => {
@@ -1740,11 +3049,9 @@ myRecordsList.addEventListener("click", (event) => {
   if (!button) {
     return;
   }
-  openCastlePopup(
+  openMyJournalSidePanel(
     Number(button.dataset.castleId),
-    "edit",
     button.dataset.travelDate,
-    true,
   );
 });
 
@@ -1759,10 +3066,12 @@ async function initialize() {
   syncMapViewControls();
   renderPopularityLegend();
   renderSamuraiRankLegend();
+  renderAccountPrefectureLegend();
   await loadAuth();
   await loadJournals();
   await loadAdministrativeAreas();
   await loadCastles();
+  await loadJournalStats();
   renderMyRecords();
   await loadLatestActivities();
 }

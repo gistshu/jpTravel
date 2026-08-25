@@ -46,3 +46,9 @@ class CastleJournal(TimestampMixin, AuditMixin, Base):
 
     user = relationship("User")
     castle = relationship("Castle")
+    recommendations = relationship(
+        "JournalRecommendation",
+        back_populates="journal",
+        cascade="all, delete-orphan",
+        order_by="JournalRecommendation.sort_order",
+    )

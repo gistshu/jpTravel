@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>城堡所有紀錄</title>
+    <link rel="stylesheet" href="/static/styles.css?v=37">
+    <script src="/static/castle_journals.js?v=10" defer></script>
+  </head>
+  <body class="castle-journal-page">
+    <main class="castle-journal-reader" aria-label="城堡所有紀錄">
+      <header id="castle-journal-hero" class="castle-journal-hero">
+        <div class="castle-journal-hero-text">
+          <a class="castle-journal-back" href="/">返回地圖</a>
+          <h1 id="castle-journal-title">城堡紀錄</h1>
+          <p id="castle-journal-subtitle">載入中</p>
+        </div>
+      </header>
+      <section class="castle-journal-layout" aria-label="旅遊紀錄閱讀器">
+        <aside class="castle-journal-list-panel" aria-label="旅遊紀錄清單">
+          <div class="castle-journal-list-panel-header">
+            <h2>旅遊紀錄</h2>
+            <button
+              id="toggle-recommendation-view"
+              class="castle-journal-view-toggle"
+              type="button"
+              aria-pressed="false"
+            >
+              順遊推薦
+            </button>
+          </div>
+          <ol id="castle-journal-list" class="castle-journal-list"></ol>
+          <div id="castle-journal-empty" class="castle-journal-empty" hidden>
+            尚無筆記紀錄
+          </div>
+        </aside>
+        <article id="castle-journal-detail" class="castle-journal-detail">
+          <div class="castle-journal-empty">請選擇一筆紀錄</div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
