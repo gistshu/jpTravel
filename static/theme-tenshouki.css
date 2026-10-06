@@ -1,0 +1,725 @@
+/*
+ * 天翔記風格主題：覆蓋 styles.css 的視覺樣式（色彩、字體、邊框），不改動版面配置。
+ * 視窗為深藍漸層加金色雙框，內容卡片為和紙底墨字，按鈕為立體指令鈕。
+ */
+
+:root {
+  --tk-window-top: #22306a;
+  --tk-window-bottom: #0b1230;
+  --tk-window-row: rgb(255 255 255 / 6%);
+  --tk-window-row-hover: rgb(236 210 139 / 14%);
+  --tk-gold: #c9a24a;
+  --tk-gold-light: #ecd28b;
+  --tk-gold-dark: #6e5018;
+  --tk-text: #f3ead2;
+  --tk-text-dim: #bdb393;
+  --tk-vermilion: #b3262d;
+  --tk-vermilion-light: #d9483f;
+  --tk-washi: #f4ecd6;
+  --tk-washi-dark: #e6dabb;
+  --tk-ink: #1f1a12;
+  --tk-ink-dim: #5b4f3a;
+  --tk-sea-top: #1f3f6e;
+  --tk-sea-bottom: #12284a;
+  --tk-font: "Noto Serif TC", "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --tk-window-background: linear-gradient(180deg, var(--tk-window-top), var(--tk-window-bottom));
+  --tk-window-border: 3px double var(--tk-gold);
+  --tk-window-shadow:
+    0 0 0 1px #05081a,
+    inset 0 0 0 1px rgb(236 210 139 / 18%),
+    0 14px 36px rgb(0 0 0 / 45%);
+}
+
+html,
+body {
+  color: var(--tk-text);
+  background: var(--tk-sea-bottom);
+  font-family: var(--tk-font);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: var(--tk-font) !important;
+}
+
+/* ---------- 地圖底色（海） ---------- */
+
+.map-canvas,
+.leaflet-container {
+  background:
+    radial-gradient(ellipse at 60% 40%, var(--tk-sea-top), var(--tk-sea-bottom) 75%);
+  font-family: var(--tk-font);
+}
+
+/* ---------- 視窗外框 ---------- */
+
+.map-header,
+.map-controls,
+.popularity-legend,
+.activity-panel,
+.side-list-panel,
+.account-ranking-panel,
+.journal-side-panel,
+.samurai-rank-legend,
+.account-view-banner,
+.account-prefecture-legend,
+.site-footer-links,
+.site-info-dialog,
+.poi-picker-dialog,
+.castle-journal-list-panel,
+.castle-leaflet-popup .leaflet-popup-content-wrapper {
+  border: var(--tk-window-border);
+  border-radius: 0;
+  background: var(--tk-window-background);
+  box-shadow: var(--tk-window-shadow);
+  color: var(--tk-text);
+}
+
+.castle-leaflet-popup .leaflet-popup-content-wrapper::before {
+  border-right-color: var(--tk-gold);
+  filter: drop-shadow(-2px 2px 2px rgb(0 0 0 / 40%));
+}
+
+/* ---------- 標題文字（金字） ---------- */
+
+.map-header h1,
+.popularity-legend h2,
+.activity-panel h2,
+.side-list-panel h2,
+.ranking-panel-header h2,
+.samurai-rank-legend h2,
+.account-prefecture-legend h2,
+.journal-side-panel h2,
+.site-info-heading,
+.site-info-content h3,
+.poi-picker-header h2,
+.castle-journal-list-panel h2 {
+  color: var(--tk-gold-light);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 #000, 0 0 8px rgb(201 162 74 / 35%);
+}
+
+.map-header h1 {
+  font-size: 20px;
+}
+
+.ranking-panel-header,
+.activity-panel-header,
+.journal-side-panel-header,
+.account-prefecture-legend-header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgb(201 162 74 / 45%);
+}
+
+/* ---------- 視窗內次要文字 ---------- */
+
+.auth-name,
+.journal-stats,
+.castle-count,
+.popularity-legend-item,
+.activity-time,
+.activity-trip-date,
+.activity-empty,
+.popular-count,
+.samurai-rank-legend-item,
+.account-prefecture-legend-item,
+.journal-side-panel-header span,
+.castle-popup span,
+.journal-message,
+.poi-picker-status,
+.site-info-content p,
+.site-info-content li,
+.site-footer-links,
+.castle-journal-empty,
+.journal-field,
+.journal-visited {
+  color: var(--tk-text-dim);
+}
+
+.activity-main,
+.popular-main,
+.samurai-rank-legend-item strong,
+.account-ranking-main strong,
+.castle-popup-title,
+.castle-popup strong,
+.journal-side-title-link {
+  color: var(--tk-text);
+}
+
+.activity-button:hover .activity-main,
+.popular-button:hover .popular-main,
+a.castle-popup-title:hover,
+.journal-side-title-link:hover {
+  color: var(--tk-gold-light);
+}
+
+.site-info-content a,
+.site-footer-link {
+  color: var(--tk-gold-light);
+}
+
+.site-footer-link:hover,
+.site-info-content a:hover {
+  color: #fff;
+}
+
+.auth-panel {
+  border-left-color: rgb(201 162 74 / 45%);
+}
+
+.activity-item,
+.popular-item {
+  border-bottom-color: rgb(201 162 74 / 22%);
+}
+
+/* ---------- 指令按鈕（立體） ---------- */
+
+.auth-button,
+.journal-save,
+.journal-new-date-button,
+.drawer-toggle,
+.map-control-button,
+.activity-refresh,
+.popup-action-button,
+.account-view-close,
+.site-info-close,
+.poi-picker-close,
+.poi-radius-button,
+.journal-add-recommendation,
+.journal-remove-recommendation,
+.journal-pick-place,
+.poi-select-place,
+.castle-journal-view-toggle,
+.castle-journal-back,
+.journal-date-picker-button {
+  border: 1px solid;
+  border-color: #8d93c4 #070b22 #070b22 #8d93c4;
+  border-radius: 0;
+  background: linear-gradient(180deg, #34428a, #19225a);
+  box-shadow: 0 0 0 1px #05081a;
+  color: var(--tk-text);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 #000;
+}
+
+.auth-button:hover,
+.journal-save:hover,
+.journal-new-date-button:hover,
+.drawer-toggle:hover,
+.map-control-button:hover,
+.activity-refresh:hover,
+.popup-action-button:hover,
+.account-view-close:hover,
+.site-info-close:hover,
+.poi-picker-close:hover,
+.poi-radius-button:hover,
+.journal-add-recommendation:hover,
+.journal-remove-recommendation:hover,
+.journal-pick-place:hover,
+.poi-select-place:hover,
+.castle-journal-view-toggle:hover,
+.castle-journal-back:hover,
+.journal-date-picker-button:hover {
+  background: linear-gradient(180deg, #44559f, #222d6c);
+  color: var(--tk-gold-light);
+}
+
+.auth-button:active,
+.drawer-toggle:active,
+.map-control-button:active,
+.popup-action-button:active {
+  border-color: #070b22 #8d93c4 #8d93c4 #070b22;
+}
+
+/* 選取中的指令：朱漆 */
+.drawer-toggle.is-active,
+.map-drawer:not(.is-collapsed) .drawer-toggle,
+.map-control-button.is-active,
+.poi-radius-button.is-active,
+.castle-journal-view-toggle.is-active,
+.journal-save,
+.poi-select-place {
+  border-color: #e98a7c #4a0c0f #4a0c0f #e98a7c;
+  background: linear-gradient(180deg, var(--tk-vermilion-light), #7d1a1f);
+  color: #fff6dd;
+}
+
+.drawer-toggle.is-active:hover,
+.map-drawer:not(.is-collapsed) .drawer-toggle:hover,
+.map-control-button.is-active:hover,
+.poi-radius-button.is-active:hover,
+.castle-journal-view-toggle.is-active:hover,
+.journal-save:hover,
+.poi-select-place:hover {
+  background: linear-gradient(180deg, #e65a50, #8f1f25);
+  color: #fff;
+}
+
+.map-control-button:disabled {
+  border-color: #2c3360 #0b0f28 #0b0f28 #2c3360;
+  background: #1a2048;
+  color: #5d6390;
+  text-shadow: none;
+}
+
+.map-control-button {
+  min-width: 104px;
+}
+
+.journal-date-picker-button::before {
+  border-color: var(--tk-gold-light);
+}
+
+.journal-date-picker-button::after {
+  background: var(--tk-gold-light);
+}
+
+/* ---------- 和紙卡片（筆記內容） ---------- */
+
+.popup-record,
+.journal-side-panel .popup-record,
+.activity-journal,
+.journal-composer,
+.journal-recommendation-row,
+.poi-choice-button,
+.castle-journal-list-button,
+.castle-journal-detail,
+.castle-journal-recommendation-card,
+.castle-journal-image {
+  border: 1px solid #a88e5c;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 30%), transparent 40%),
+    var(--tk-washi);
+  box-shadow: inset 0 0 18px rgb(150 120 60 / 18%);
+  color: var(--tk-ink);
+}
+
+.journal-side-panel .popup-record {
+  background:
+    linear-gradient(90deg, var(--tk-vermilion) 0 4px, transparent 4px),
+    var(--tk-washi);
+}
+
+.popup-record-summary:hover,
+.popup-record.is-expanded .popup-record-summary,
+.poi-choice-button:hover,
+.castle-journal-list-button:hover,
+.castle-journal-list-button.is-selected {
+  border-color: var(--tk-gold-dark);
+  background: var(--tk-washi-dark);
+}
+
+.castle-journal-list-button.is-selected::before {
+  background: var(--tk-vermilion);
+}
+
+.castle-journal-list-button::before {
+  background: #c8b78c;
+}
+
+.popup-record-summary-text,
+.popup-record-text,
+.journal-side-panel .popup-record-text,
+.castle-journal-list-button strong,
+.castle-journal-detail-header h2,
+.castle-journal-detail-text,
+.castle-journal-recommendation-card h3,
+.poi-choice-button strong,
+.journal-recommendation-header h3,
+.journal-image-upload span,
+.journal-recommendation-image-upload span,
+.activity-journal {
+  color: var(--tk-ink);
+}
+
+.popup-record-meta,
+.journal-side-panel .popup-record-meta,
+.castle-journal-list-button > span:not(.castle-journal-list-user),
+.castle-journal-list-button small,
+.castle-journal-detail-header p,
+.castle-journal-detail-header time,
+.castle-journal-recommendation-card p,
+.castle-journal-recommendation-address,
+.poi-choice-button span,
+.poi-choice-button small,
+.journal-picked-place,
+.journal-recommendation-rating {
+  color: var(--tk-ink-dim);
+}
+
+.journal-side-panel .popup-record-meta,
+.journal-side-panel .popup-record-meta + .popup-record-meta,
+.castle-journal-list-date {
+  border-color: rgb(110 80 24 / 30%);
+  background: rgb(110 80 24 / 10%);
+  color: var(--tk-ink-dim);
+}
+
+.journal-side-panel .popup-record-text {
+  border-left-color: rgb(179 38 45 / 35%);
+}
+
+/* ---------- 輸入欄位 ---------- */
+
+.journal-text,
+.journal-date,
+.journal-recommendation-name,
+.journal-recommendation-category,
+.journal-recommendation-description,
+.journal-recommendation-map-url,
+.journal-recommendation-rating-input {
+  border: 1px solid #a88e5c;
+  border-radius: 0;
+  background: #fbf6e8;
+  color: var(--tk-ink);
+}
+
+.journal-text {
+  border: 0;
+}
+
+.journal-text:focus,
+.journal-date:focus,
+.journal-recommendation-name:focus,
+.journal-recommendation-category:focus,
+.journal-recommendation-description:focus,
+.journal-recommendation-map-url:focus {
+  outline: 2px solid var(--tk-gold);
+  outline-offset: -1px;
+}
+
+.journal-image-editor {
+  border-top-color: rgb(110 80 24 / 30%);
+}
+
+.journal-image-upload,
+.journal-recommendation-image-upload {
+  border-color: rgb(110 80 24 / 45%);
+  background: var(--tk-washi-dark);
+  color: var(--tk-ink-dim);
+}
+
+.journal-recommendation-editor {
+  border: 1px solid rgb(201 162 74 / 55%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.journal-recommendation-editor .journal-recommendation-header h3 {
+  color: var(--tk-gold-light);
+}
+
+.journal-star-button {
+  color: #b9ad8c;
+}
+
+.journal-star-button:hover,
+.journal-star-button.is-active,
+.castle-journal-recommendation-rating,
+.popular-crown {
+  color: #d9a520;
+}
+
+/* ---------- 排行（最強大名） ---------- */
+
+.account-ranking-button {
+  border: 1px solid rgb(201 162 74 / 30%);
+  border-radius: 0;
+  background: var(--tk-window-row);
+  color: var(--tk-text);
+}
+
+.account-ranking-button:hover {
+  border-color: var(--tk-gold);
+  background: var(--tk-window-row-hover);
+}
+
+.account-ranking-rank {
+  color: var(--tk-gold-light);
+}
+
+.account-ranking-main span {
+  color: var(--tk-text-dim);
+}
+
+.account-ranking-count {
+  color: #ff8f7f;
+}
+
+/* ---------- 武士階級徽章（家紋風） ---------- */
+
+.samurai-badge,
+.auth-rank-badge {
+  border: 2px solid var(--tk-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #05081a, inset 0 0 0 1px rgb(0 0 0 / 35%);
+  font-family: var(--tk-font);
+}
+
+.title-level-0,
+.title-level-1,
+.title-level-2 {
+  background: radial-gradient(circle at 35% 30%, #8a6a44, #4a3420);
+  color: #f3e3c0;
+}
+
+.title-level-3,
+.title-level-4,
+.title-level-5 {
+  background: radial-gradient(circle at 35% 30%, #4a5ea8, #1c2560);
+  color: #e8ecff;
+}
+
+.title-level-6,
+.title-level-7,
+.title-level-8 {
+  background: radial-gradient(circle at 35% 30%, #f1d27a, #a77a1e);
+  color: #3a2508;
+}
+
+.title-level-9,
+.title-level-10,
+.title-level-11 {
+  border-color: var(--tk-gold-light);
+  background: radial-gradient(circle at 35% 30%, #e0473e, #6e1216);
+  color: #ffe9a8;
+}
+
+/* ---------- 城堡 marker 與地圖標籤 ---------- */
+
+.castle-marker {
+  border: 2px solid var(--tk-vermilion);
+  border-radius: 3px;
+  background: var(--tk-washi);
+  box-shadow: 0 0 0 1px #2a1408, 0 3px 8px rgb(0 0 0 / 45%);
+  color: var(--tk-vermilion);
+  font-family: var(--tk-font);
+}
+
+.castle-marker.series-continued {
+  border-color: #23408f;
+  color: #23408f;
+}
+
+.leaflet-tooltip.castle-label {
+  border: 1px solid var(--tk-gold);
+  border-radius: 0;
+  background: rgb(11 18 48 / 92%);
+  box-shadow: 0 0 0 1px #05081a;
+  color: var(--tk-text);
+  font-family: var(--tk-font);
+}
+
+.leaflet-tooltip.castle-label::before {
+  display: none;
+}
+
+.leaflet-tooltip.prefecture-label {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #3b2a14;
+  font-family: var(--tk-font);
+  text-shadow: 0 0 3px rgb(255 245 220 / 90%);
+}
+
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  border-bottom-color: #070b22;
+  background: linear-gradient(180deg, #34428a, #19225a);
+  color: var(--tk-gold-light);
+}
+
+.leaflet-bar {
+  border: 2px solid var(--tk-gold) !important;
+  border-radius: 0 !important;
+}
+
+.leaflet-bar a:first-child,
+.leaflet-bar a:last-child {
+  border-radius: 0;
+}
+
+.leaflet-control-attribution {
+  background: rgb(11 18 48 / 75%) !important;
+  color: var(--tk-text-dim);
+}
+
+.leaflet-control-attribution a {
+  color: var(--tk-gold-light);
+}
+
+.castle-leaflet-popup .leaflet-popup-content {
+  color: var(--tk-text);
+}
+
+.castle-popup-image,
+.journal-side-panel .castle-popup-image {
+  border: 2px solid var(--tk-gold);
+}
+
+/* ---------- 對話框與遮罩 ---------- */
+
+.site-info-backdrop,
+.poi-picker-backdrop {
+  background: rgb(4 6 20 / 70%);
+}
+
+.poi-picker-header {
+  border-bottom-color: rgb(201 162 74 / 45%);
+}
+
+.poi-picker-results {
+  border-top-color: rgb(201 162 74 / 45%);
+  background: rgb(4 8 26 / 60%);
+}
+
+.account-view-banner {
+  color: var(--tk-gold-light);
+}
+
+.account-prefecture-legend-swatch,
+.popularity-legend-swatch {
+  border: 1px solid rgb(236 210 139 / 50%);
+}
+
+/* ---------- 城堡完整紀錄頁 ---------- */
+
+.castle-journal-page {
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 2%) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #0b1230, #172152 320px, #0b1230);
+}
+
+.castle-journal-hero {
+  border-bottom: 3px double var(--tk-gold);
+  background: var(--tk-window-bottom);
+}
+
+.castle-journal-hero h1 {
+  color: var(--tk-gold-light);
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 0 #000, 0 0 14px rgb(201 162 74 / 45%);
+}
+
+.castle-journal-hero p span {
+  border-color: rgb(236 210 139 / 50%);
+  background: rgb(11 18 48 / 60%);
+  color: var(--tk-text);
+}
+
+.castle-journal-detail-kicker {
+  border-bottom: 1px solid rgb(201 162 74 / 60%);
+  background: linear-gradient(180deg, var(--tk-window-top), var(--tk-window-bottom));
+  color: var(--tk-gold-light);
+}
+
+.castle-journal-detail-header {
+  border-bottom-color: rgb(110 80 24 / 30%);
+}
+
+.castle-journal-detail {
+  border: var(--tk-window-border);
+  box-shadow: var(--tk-window-shadow);
+}
+
+.castle-journal-recommendations h2 {
+  color: var(--tk-vermilion);
+}
+
+.castle-journal-recommendation-meta,
+.castle-journal-recommendation-source,
+.castle-journal-list-recommendation {
+  color: var(--tk-gold-dark);
+}
+
+.castle-journal-list-recommendation {
+  border-color: rgb(110 80 24 / 30%);
+  background: rgb(201 162 74 / 22%);
+}
+
+.castle-journal-recommendation-map {
+  color: #23408f;
+}
+
+/* ---------- 捲軸 ---------- */
+
+* {
+  scrollbar-color: var(--tk-gold-dark) rgb(5 8 26 / 60%);
+}
+
+/* ---------- 旅遊日期日曆 ---------- */
+
+.journal-calendar {
+  border: var(--tk-window-border);
+  border-radius: 0;
+  background: var(--tk-window-background);
+  box-shadow: var(--tk-window-shadow);
+  color: var(--tk-text);
+}
+
+.journal-calendar-nav {
+  border: 1px solid;
+  border-color: #8d93c4 #070b22 #070b22 #8d93c4;
+  border-radius: 0;
+  background: linear-gradient(180deg, #34428a, #19225a);
+  color: var(--tk-gold-light);
+}
+
+.journal-calendar-year,
+.journal-calendar-month {
+  border: 1px solid var(--tk-gold);
+  border-radius: 0;
+  background: #fbf6e8;
+  color: var(--tk-ink);
+}
+
+.journal-calendar-weekdays span {
+  color: var(--tk-gold-light);
+}
+
+.journal-calendar-weekdays span:first-child {
+  color: #ff8f7f;
+}
+
+.journal-calendar-day {
+  color: var(--tk-text);
+}
+
+.journal-calendar-day:hover {
+  border-color: var(--tk-gold);
+  background: var(--tk-window-row-hover);
+}
+
+.journal-calendar-day.is-today {
+  border-color: rgb(236 210 139 / 55%);
+}
+
+.journal-calendar-day.is-selected {
+  border-color: #e98a7c #4a0c0f #4a0c0f #e98a7c;
+  background: linear-gradient(180deg, var(--tk-vermilion-light), #7d1a1f);
+  color: #fff6dd;
+}
+
+/* ---------- 地圖圖層切換 ---------- */
+
+.leaflet-control-layers {
+  border: 2px solid var(--tk-gold) !important;
+  border-radius: 0 !important;
+  background: var(--tk-window-background);
+  color: var(--tk-text);
+  font-family: var(--tk-font);
+}
+
+.leaflet-control-layers-base label {
+  margin: 2px 0;
+  cursor: pointer;
+}
+
+.leaflet-control-layers input {
+  accent-color: var(--tk-vermilion);
+}

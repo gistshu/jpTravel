@@ -8,7 +8,11 @@
       rel="stylesheet"
       href="/static/vendor/leaflet/leaflet.css?v=1"
     >
-    <link rel="stylesheet" href="/static/styles.css?v=54">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&display=swap">
+    <link rel="stylesheet" href="/static/styles.css?v=55">
+    <link rel="stylesheet" href="/static/theme-tenshouki.css?v=2">
   </head>
   <body>
     <main class="map-shell" aria-label="日本城堡地圖">
@@ -60,13 +64,6 @@
               type="button"
             >
               城堡名稱
-            </button>
-            <button
-              id="toggle-railway-layer"
-              class="map-control-button"
-              type="button"
-            >
-              鐵道圖層
             </button>
             <button
               id="toggle-region-colors"
@@ -344,8 +341,12 @@
                 <span>使用內容：地圖底圖與地理瀏覽介面。</span>
               </li>
               <li>
-                <a href="https://www.openrailwaymap.org/" target="_blank" rel="noopener noreferrer">OpenRailwayMap</a>
-                <span>使用內容：主地圖可選擇疊加鐵道路線與車站圖層。</span>
+                <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院 地理院タイル</a>
+                <span>使用內容：順遊推薦選取地點地圖的向量地圖（已移除建物圖層）、標準地圖與航空照片。</span>
+              </li>
+              <li>
+                <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a>
+                <span>使用內容：順遊推薦選取地點地圖的淡色向量底圖（OpenStreetMap 資料）。</span>
               </li>
               <li>
                 <a href="https://github.com/dataofjapan/land" target="_blank" rel="noopener noreferrer">JapanPrefGeoJson</a>
@@ -403,6 +404,6 @@
     <script
       src="/static/vendor/leaflet/leaflet.js?v=1"
     ></script>
-    <script src="/static/map.js?v=67"></script>
+    <script src="/static/map.js?v=72"></script>
   </body>
 </html>

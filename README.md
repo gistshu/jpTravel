@@ -10,14 +10,13 @@
 - SQLite
 - RESTful JSON API
 - pytest
-- Leaflet
-- OpenStreetMap / OpenRailwayMap / JapanPrefGeoJson 行政區資料
+- Leaflet（選點地圖另以 MapLibre GL 顯示向量底圖，開啟時才載入）
+- OpenStreetMap / 国土地理院 / JapanPrefGeoJson 行政區資料
 
 ## 目前功能
 
 - 首頁顯示日本區域地圖，預設以大阪城為中心。
 - 地圖限制在日本周邊區域拖曳。
-- 主地圖可切換 OpenRailwayMap 鐵道路線與車站圖層，預設關閉，需要時才載入。
 - 城堡座標、地址、縣市目前整合 ToCoo 與 100finecastles 官方 100/續 100 名城資料。
 - 支援原日本 100 名城與續日本 100 名城，標題顯示為 `日本城堡地圖 (100+續)`。
 - 原 100 城 marker 使用紅色 `濟` 字，續 100 城 marker 使用藍色 `濟` 字。
@@ -31,11 +30,13 @@
 - Google OAuth 登入。
 - 登入帳號名稱左側顯示目前武士等級圓形徽章。
 - 登入後可為同一城堡建立多筆筆記，不同旅遊日期可多筆，同一天只會有一筆。
-- 筆記日期可手動輸入 `YYYY-MM-DD`，也可用日曆 icon 快速選擇日期。
+- 整站採用《信長之野望・天翔記》風格主題：深藍視窗、金色雙框、明朝體、立體指令鈕、和紙筆記卡（`static/theme-tenshouki.css`）。
+- 筆記日期可手動輸入 `YYYY-MM-DD`，也可用日曆 icon 開啟自製日曆（顯示在旅遊日期下方，可切換年、月）。
+- 輸入筆記文字或加入照片時，自動勾選 `已去過`。
 - 筆記編輯區支援最多 5 張圖片，上傳時會壓縮到 1MB 以下儲存。
 - 筆記編輯區可新增順遊推薦，每筆推薦可填名稱、類型、推薦原因、5 星評分與最多 3 張圖片。
 - 新增順遊推薦地點選取：
-  - 使用目前首頁 Leaflet / OpenStreetMap 地圖。
+  - 選點地圖可切換：地理院 簡潔地圖（無建物，預設）、OpenFreeMap 淡色（無建物）、地理院 標準地図、地理院 航空照片、OpenStreetMap。
   - 不預先載入 POI，避免大量流量。
   - 使用者點選地圖位置後，才以預設 300m 半徑查詢附近 POI 清單，可切換 100m、300m、800m。
   - 可從附近 POI 選擇店家/景點；若沒有合適地點，可直接使用點選座標。
@@ -260,6 +261,22 @@ python3 scripts/seed_large_demo_journals_with_recommendations.py --count 2000 --
 - 為每筆筆記產生 2 筆順遊推薦，每筆 1 張示意圖片。
 - 優先從 Pexels 日本街景搜尋結果下載示意圖片；若搜尋頁被擋，改用 Pexels 圖片直連備援。
 
+建立擬真 demo 資料（目前使用中）：
+
+```bash
+python3 scripts/seed_realistic_demo_data.py            # 抓取資料 + 產生紀錄
+python3 scripts/seed_realistic_demo_data.py --fetch-only  # 只抓取（可中斷續傳）
+python3 scripts/seed_realistic_demo_data.py --seed-only   # 只用快取重建紀錄
+```
+
+此腳本會：
+
+- 從 Wikimedia Commons 依城堡座標下載實拍照片（每城最多 5 張），從 OpenStreetMap / Overpass 抓城堡周邊真實景點、餐廳、咖啡廳與伴手禮店，景點再配 Commons 附近實拍照片。
+- 照片壓縮後存於 `static/uploads/journals/demo_real/`，快取為 `places_cache.json`，作者與授權記錄於 `CREDITS.json`（Commons 照片多為 CC BY / CC BY-SA，公開時需標示）。
+- 只刪除 `demo-user-*` 帳號的筆記與推薦，真實帳號資料保留。
+- 建立 50 個 demo 使用者，產生 3000 筆筆記：使用者活躍度呈長尾分布（前段帳號接近制霸）、以「連續數天走訪鄰近城堡」的旅程規劃、旅遊日期集中於賞櫻與紅葉季。
+- 筆記文字依季節、天守類型（現存 / 重建 / 城跡）、百名城或續百名城印章組合產生；約 35% 筆記附 1–3 筆真實周邊地點的順遊推薦。
+
 ## API 摘要
 
 ```text
@@ -304,14 +321,20 @@ GET  /api/v1/castles/nearby-pois
   https://www.wikipedia.org/
 - 地圖底圖：OpenStreetMap<br>
   https://www.openstreetmap.org/
-- 鐵道圖層：OpenRailwayMap<br>
-  https://www.openrailwaymap.org/
+- 順遊推薦選點地圖：国土地理院 地理院タイル<br>
+  https://maps.gsi.go.jp/development/ichiran.html
+- 順遊推薦選點淡色地圖：OpenFreeMap<br>
+  https://openfreemap.org/
 - 附近 POI 查詢：Overpass API / OpenStreetMap 資料<br>
   https://overpass-api.de/
 - 日本行政區 GeoJSON：JapanPrefGeoJson<br>
   https://github.com/amay077/JapanPrefGeoJson
 - Demo 筆記與順遊推薦示意圖片：Pexels<br>
   https://www.pexels.com/zh-tw/search/日本街景/
+- 擬真 demo 筆記與順遊推薦照片：Wikimedia Commons（各照片作者與授權見 `static/uploads/journals/demo_real/CREDITS.json`）<br>
+  https://commons.wikimedia.org/
+- 擬真 demo 順遊推薦地點：OpenStreetMap / Overpass API<br>
+  https://overpass-api.de/
 
 ## 今日完成摘要
 
@@ -502,3 +525,34 @@ GET  /api/v1/castles/nearby-pois
   - `ruff check .` 通過。
   - `pytest` 維持 12 個案例通過。
   - `ruff check scripts/seed_large_demo_journals_with_recommendations.py` 通過。
+
+## 20261005 完成摘要
+
+- 天翔記風格 UI：
+  - 新增 `static/theme-tenshouki.css`，疊在 `styles.css` 之後，只覆蓋色彩、字型與邊框，不改版面；移除該 link 即可還原原風格。
+  - 視窗、面板、彈窗改為深藍漸層與金色雙框，標題金字；按鈕為立體指令鈕，選取中為朱漆色。
+  - 筆記卡、輸入框改為和紙底墨字；武士階級徽章改為家紋風圓章（木、藍、金、朱四段）。
+  - 城堡 marker 改為和紙方印；地圖海面改深藍，八地方改為大名勢力風色塊、縣界深褐色。
+  - 首頁與城堡紀錄頁載入 Google Fonts「Noto Serif TC」明朝體。
+- 筆記輸入：
+  - 輸入筆記文字或加入照片時自動勾選 `已去過`（開啟表單時不預先勾選，避免切換日期時無法載入既有筆記）。
+  - 瀏覽器原生日期選擇器改為自製日曆元件，顯示於旅遊日期下方，可用年、月下拉與左右箭頭切換，Esc 或點外部關閉。
+  - 修正右側筆記面板出現水平捲軸：表單寬度改為跟隨面板。
+- 主畫面選單移除 `鐵道圖層` 按鈕與 OpenRailwayMap 圖層程式。
+- 順遊推薦選點地圖：
+  - 新增圖層切換，加入国土地理院 標準地図、航空照片。
+  - 地理院 raster 圖磚無法移除建物，改用地理院最適化向量圖磚（optimal_bvmap）並濾掉建物圖層，作為預設「地理院 簡潔地圖（無建物）」；另加 OpenFreeMap positron 淡色（無建物）。
+  - 向量底圖透過 MapLibre GL + maplibre-gl-leaflet，開啟選點地圖時才動態載入，不影響主畫面速度。
+  - 評估 CARTO Voyager：目前需 API key，未採用。
+  - 討論 Google Maps 選點：須用官方 Maps JavaScript API 與帳單帳戶；Places 資料依條款只能長期保存 `place_id`，與目前永久保存名稱、地址、座標的設計衝突，暫不採用；現行以經緯度開啟 Google Maps 連結則無授權問題。
+  - 參考網站 modal 補上国土地理院與 OpenFreeMap 來源。
+- 擬真 demo 資料：
+  - 新增 `scripts/seed_realistic_demo_data.py`（抓取可續傳、Wikimedia 全域限速、Overpass 每台伺服器一次一個請求）。
+  - 200 座 100 名城與續 100 名城：Commons 城堡實拍照片每城最多 5 張，OSM 周邊真實景點、餐廳、咖啡廳與伴手禮店，景點配 Commons 附近照片；照片約 250MB 存於 `static/uploads/journals/demo_real/`，授權記錄於 `CREDITS.json`。
+  - 刪除 demo 帳號舊紀錄，重建 50 位 demo 使用者、3000 筆筆記（2288 筆附照片）與 1466 筆順遊推薦（396 筆附照片）；真實帳號 8 筆筆記保留。
+  - 原資料庫備份為 `jp_travel.backup-20261005.sqlite3`。
+- 驗證：
+  - `node --check static/map.js` 通過。
+  - `ruff check .` 通過。
+  - `pytest` 維持 12 個案例通過。
+  - 以 headless Chrome / Playwright 截圖確認主題、日曆、選點地圖與 demo 資料頁面。

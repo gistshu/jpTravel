@@ -40,14 +40,14 @@ const POPULARITY_COLORS = [
   "#6f35c4",
 ];
 const PREFECTURE_REGION_COLORS = [
-  { ids: [1], color: "#d9edf7" },
-  { ids: [2, 3, 4, 5, 6, 7], color: "#dcebd8" },
-  { ids: [8, 9, 10, 11, 12, 13, 14], color: "#f5e3dd" },
-  { ids: [15, 16, 17, 18, 19, 20, 21, 22, 23], color: "#f6edc8" },
-  { ids: [24, 25, 26, 27, 28, 29, 30], color: "#e7e0f2" },
-  { ids: [31, 32, 33, 34, 35], color: "#d8e8ef" },
-  { ids: [36, 37, 38, 39], color: "#f4dfbd" },
-  { ids: [40, 41, 42, 43, 44, 45, 46, 47], color: "#dce9df" },
+  { ids: [1], color: "#c9c3a4" },
+  { ids: [2, 3, 4, 5, 6, 7], color: "#a9b886" },
+  { ids: [8, 9, 10, 11, 12, 13, 14], color: "#d9a868" },
+  { ids: [15, 16, 17, 18, 19, 20, 21, 22, 23], color: "#d4c07a" },
+  { ids: [24, 25, 26, 27, 28, 29, 30], color: "#cf8f7c" },
+  { ids: [31, 32, 33, 34, 35], color: "#9fb7a8" },
+  { ids: [36, 37, 38, 39], color: "#e0bf8a" },
+  { ids: [40, 41, 42, 43, 44, 45, 46, 47], color: "#b7a3c4" },
 ];
 const ACCOUNT_PREFECTURE_COLORS = [
   "#f1ecf7",
@@ -57,7 +57,54 @@ const ACCOUNT_PREFECTURE_COLORS = [
   "#8951b5",
   "#68309a",
 ];
-const NEUTRAL_PREFECTURE_COLOR = "#f3f5f2";
+const NEUTRAL_PREFECTURE_COLOR = "#e4d6b0";
+const CALENDAR_FIRST_YEAR = 1990;
+const CALENDAR_WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+const GSI_ATTRIBUTION = (
+  '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院</a>'
+);
+const POI_PICKER_BASE_LAYERS = [
+  {
+    name: "地理院 標準地図（含建物）",
+    url: "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
+    options: { attribution: GSI_ATTRIBUTION, maxNativeZoom: 18, maxZoom: 20 },
+  },
+  {
+    name: "地理院 航空照片",
+    url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg",
+    options: { attribution: GSI_ATTRIBUTION, maxNativeZoom: 18, maxZoom: 20 },
+  },
+  {
+    name: "OpenStreetMap",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    options: { attribution: "© OpenStreetMap contributors", maxZoom: 19 },
+  },
+];
+const MAPLIBRE_ASSETS = {
+  css: "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css",
+  script: "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js",
+  leafletBridge: "https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js",
+};
+const GSI_VECTOR_TILE_URL = (
+  "https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1/{z}/{x}/{y}.pbf"
+);
+const BUILDING_SOURCE_LAYERS = new Set(["BldA", "BldL", "building"]);
+const POI_PICKER_VECTOR_LAYERS = [
+  {
+    name: "地理院 簡潔地圖（無建物）",
+    styleUrl: "https://gsi-cyberjapan.github.io/optimal_bvmap/style/std.json",
+    attribution: GSI_ATTRIBUTION,
+    useDirectGsiTiles: true,
+  },
+  {
+    name: "OpenFreeMap 淡色（無建物）",
+    styleUrl: "https://tiles.openfreemap.org/styles/positron",
+    attribution: (
+      '<a href="https://openfreemap.org" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> © OpenMapTiles © OpenStreetMap contributors'
+    ),
+    useDirectGsiTiles: false,
+  },
+];
 const RECOMMENDATION_CATEGORIES = [
   ["attraction", "景點"],
   ["food", "美食"],
@@ -78,22 +125,6 @@ const map = L.map("map", {
   worldCopyJump: false,
 }).setView(DEFAULT_MAP_CENTER, DEFAULT_ZOOM);
 
-map.createPane("railwayPane");
-map.getPane("railwayPane").style.zIndex = 430;
-
-const railwayLayer = L.tileLayer(
-  "https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",
-  {
-    attribution: (
-      'Railway style: <a href="https://www.openrailwaymap.org/" target="_blank" rel="noopener noreferrer">OpenRailwayMap</a>'
-    ),
-    maxZoom: 19,
-    minZoom: 2,
-    pane: "railwayPane",
-    tileSize: 256,
-    bounds: JAPAN_BOUNDS.pad(0.02),
-  },
-);
 const markerGroup = L.featureGroup().addTo(map);
 const countElement = document.querySelector("#castle-count");
 const authRankBadgeElement = document.querySelector("#auth-rank-badge");
@@ -101,7 +132,6 @@ const authNameElement = document.querySelector("#auth-name");
 const loginLink = document.querySelector("#login-link");
 const logoutButton = document.querySelector("#logout-button");
 const toggleCastleLabelsButton = document.querySelector("#toggle-castle-labels");
-const toggleRailwayLayerButton = document.querySelector("#toggle-railway-layer");
 const toggleRegionColorsButton = document.querySelector("#toggle-region-colors");
 const toggleVisitedMarkersButton = document.querySelector("#toggle-visited-markers");
 const togglePopularityLegendButton = document.querySelector(
@@ -172,7 +202,6 @@ let latestActivities = [];
 let selectedCastleLabelId = null;
 const mapViewState = {
   showCastleLabels: false,
-  showRailwayLayer: false,
   showRegionColors: true,
   showUnvisitedMarkers: true,
   showPopularityLegend: false,
@@ -245,7 +274,7 @@ function getPopularityRangeLabel(level) {
 function getPrefectureRegionColor(prefectureId) {
   const id = Number(prefectureId);
   const region = PREFECTURE_REGION_COLORS.find((item) => item.ids.includes(id));
-  return region?.color ?? "#e9efe3";
+  return region?.color ?? "#e4d6b0";
 }
 
 function normalizePrefectureName(value) {
@@ -319,20 +348,20 @@ function getAdministrativeAreaStyle(feature) {
     const visitedCount = prefectureCounts.get(prefectureName) ?? 0;
     const totalCount = totalCastleCounts.get(prefectureName) ?? 0;
     return {
-      color: "#8f9ca3",
+      color: "#5a4526",
       fillColor: getAccountPrefectureColor(visitedCount, totalCount),
-      fillOpacity: visitedCount > 0 ? 0.9 : 0.38,
+      fillOpacity: visitedCount > 0 ? 0.92 : 0.9,
       opacity: 1,
       weight: visitedCount > 0 ? 1.2 : 0.75,
     };
   }
 
   return {
-    color: "#9aa4a9",
+    color: "#5a4526",
     fillColor: mapViewState.showRegionColors
       ? getPrefectureRegionColor(feature.properties?.id)
       : NEUTRAL_PREFECTURE_COLOR,
-    fillOpacity: mapViewState.showRegionColors ? 0.88 : 0.34,
+    fillOpacity: mapViewState.showRegionColors ? 0.95 : 0.9,
     opacity: 1,
     weight: 0.9,
   };
@@ -915,22 +944,17 @@ function buildJournalForm(castle, travelDate = null) {
             class="journal-date-picker-button"
             type="button"
             aria-label="快速選擇旅遊日期"
+            aria-expanded="false"
             title="快速選擇旅遊日期"
           ></button>
           <button class="journal-new-date-button" type="button">
             新日期
           </button>
-          <input
-            class="journal-date-picker"
-            type="date"
-            value="${escapeHtml(journal.travel_date)}"
-            tabindex="-1"
-            aria-hidden="true"
-          >
           <button class="journal-save" type="submit">
             儲存筆記
           </button>
         </div>
+        <div class="journal-calendar" hidden></div>
       </div>
       <div class="journal-composer">
         <textarea
@@ -1658,10 +1682,6 @@ function syncMapViewControls() {
     "is-active",
     mapViewState.showCastleLabels,
   );
-  toggleRailwayLayerButton.classList.toggle(
-    "is-active",
-    mapViewState.showRailwayLayer,
-  );
   toggleRegionColorsButton.classList.toggle(
     "is-active",
     mapViewState.showRegionColors,
@@ -1702,11 +1722,6 @@ function syncMapViewControls() {
   cycleCastleSeriesFilterButton.textContent = (
     `顯示城堡：${getCastleSeriesFilterLabel()}`
   );
-  if (mapViewState.showRailwayLayer && !map.hasLayer(railwayLayer)) {
-    railwayLayer.addTo(map);
-  } else if (!mapViewState.showRailwayLayer && map.hasLayer(railwayLayer)) {
-    map.removeLayer(railwayLayer);
-  }
   refreshAdministrativeAreaStyles();
   syncCastleSeriesFilter();
 }
@@ -2152,10 +2167,6 @@ function isJournalFormDirty(form, castleId) {
 function loadJournalIntoForm(form, journal) {
   form.dataset.loadedTravelDate = journal.travel_date;
   form.elements.travel_date.value = journal.travel_date;
-  const datePicker = form.querySelector(".journal-date-picker");
-  if (datePicker) {
-    datePicker.value = journal.travel_date;
-  }
   form.elements.visited.checked = journal.visited;
   form.elements.journal_text.value = journal.journal_text;
   setExistingImageUrls(form, getJournalImageUrls(journal));
@@ -2170,14 +2181,129 @@ function resetJournalFormForNewDate(form, castleId) {
 }
 
 function syncJournalDate(form, castleId, travelDate) {
-  const datePicker = form.querySelector(".journal-date-picker");
-  if (datePicker) {
-    datePicker.value = travelDate;
-  }
   if (isJournalFormDirty(form, castleId)) {
     return;
   }
   loadJournalIntoForm(form, getJournalForCastleDate(castleId, travelDate));
+}
+
+function markJournalVisited(form) {
+  if (form?.elements.visited) {
+    form.elements.visited.checked = true;
+  }
+}
+
+function formatCalendarDate(year, monthIndex, day) {
+  const month = String(monthIndex + 1).padStart(2, "0");
+  return `${year}-${month}-${String(day).padStart(2, "0")}`;
+}
+
+function parseCalendarDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+  if (!match) {
+    return null;
+  }
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function renderJournalCalendar(calendar, year, monthIndex) {
+  const form = calendar.closest(".journal-form");
+  const selectedValue = form.elements.travel_date.value;
+  const today = new Date();
+  const todayValue = formatCalendarDate(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const firstWeekday = new Date(year, monthIndex, 1).getDay();
+  const dayCount = new Date(year, monthIndex + 1, 0).getDate();
+  const lastYear = today.getFullYear() + 1;
+  const yearOptions = [];
+  for (let optionYear = lastYear; optionYear >= CALENDAR_FIRST_YEAR; optionYear -= 1) {
+    yearOptions.push(
+      `<option value="${optionYear}" ${optionYear === year ? "selected" : ""}>${optionYear} 年</option>`,
+    );
+  }
+  const monthOptions = Array.from({ length: 12 }, (_, index) => (
+    `<option value="${index}" ${index === monthIndex ? "selected" : ""}>${index + 1} 月</option>`
+  ));
+  const dayCells = [];
+  for (let blank = 0; blank < firstWeekday; blank += 1) {
+    dayCells.push('<span class="journal-calendar-blank"></span>');
+  }
+  for (let day = 1; day <= dayCount; day += 1) {
+    const value = formatCalendarDate(year, monthIndex, day);
+    const classNames = ["journal-calendar-day"];
+    if (value === selectedValue) {
+      classNames.push("is-selected");
+    }
+    if (value === todayValue) {
+      classNames.push("is-today");
+    }
+    dayCells.push(
+      `<button class="${classNames.join(" ")}" type="button" data-calendar-date="${value}">${day}</button>`,
+    );
+  }
+
+  calendar.dataset.year = String(year);
+  calendar.dataset.month = String(monthIndex);
+  calendar.innerHTML = `
+    <div class="journal-calendar-header">
+      <button class="journal-calendar-nav" type="button" data-calendar-step="-1" aria-label="上個月">‹</button>
+      <select class="journal-calendar-year" aria-label="年">${yearOptions.join("")}</select>
+      <select class="journal-calendar-month" aria-label="月">${monthOptions.join("")}</select>
+      <button class="journal-calendar-nav" type="button" data-calendar-step="1" aria-label="下個月">›</button>
+    </div>
+    <div class="journal-calendar-weekdays">
+      ${CALENDAR_WEEKDAYS.map((weekday) => `<span>${weekday}</span>`).join("")}
+    </div>
+    <div class="journal-calendar-days">${dayCells.join("")}</div>
+  `;
+}
+
+function openJournalCalendar(form) {
+  const calendar = form.querySelector(".journal-calendar");
+  const selectedDate = parseCalendarDate(form.elements.travel_date.value) ?? new Date();
+  renderJournalCalendar(calendar, selectedDate.getFullYear(), selectedDate.getMonth());
+  calendar.hidden = false;
+  form.querySelector(".journal-date-picker-button").setAttribute("aria-expanded", "true");
+}
+
+function closeJournalCalendars(exceptCalendar = null) {
+  document.querySelectorAll(".journal-calendar:not([hidden])").forEach((calendar) => {
+    if (calendar === exceptCalendar) {
+      return;
+    }
+    calendar.hidden = true;
+    calendar
+      .closest(".journal-form")
+      ?.querySelector(".journal-date-picker-button")
+      ?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function handleJournalCalendarClick(event, calendar) {
+  const stepButton = event.target.closest("[data-calendar-step]");
+  if (stepButton) {
+    const shifted = new Date(
+      Number(calendar.dataset.year),
+      Number(calendar.dataset.month) + Number(stepButton.dataset.calendarStep),
+      1,
+    );
+    renderJournalCalendar(calendar, shifted.getFullYear(), shifted.getMonth());
+    return;
+  }
+
+  const dayButton = event.target.closest("[data-calendar-date]");
+  if (!dayButton) {
+    return;
+  }
+  const form = calendar.closest(".journal-form");
+  const castleId = Number(calendar.closest(".castle-popup").dataset.castleId);
+  form.elements.travel_date.value = dayButton.dataset.calendarDate;
+  closeJournalCalendars();
+  syncJournalDate(form, castleId, dayButton.dataset.calendarDate);
 }
 
 function syncRecommendationEditor(form, recommendations) {
@@ -2274,6 +2400,65 @@ function setPoiPickerStatus(message) {
   ensurePoiPicker().querySelector(".poi-picker-status").textContent = message;
 }
 
+function loadExternalScript(url) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = url;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`無法載入 ${url}`));
+    document.head.append(script);
+  });
+}
+
+let mapLibrePromise = null;
+
+function loadMapLibre() {
+  if (!mapLibrePromise) {
+    const stylesheet = document.createElement("link");
+    stylesheet.rel = "stylesheet";
+    stylesheet.href = MAPLIBRE_ASSETS.css;
+    document.head.append(stylesheet);
+    mapLibrePromise = loadExternalScript(MAPLIBRE_ASSETS.script)
+      .then(() => loadExternalScript(MAPLIBRE_ASSETS.leafletBridge));
+  }
+  return mapLibrePromise;
+}
+
+async function fetchStyleWithoutBuildings(layerConfig) {
+  const response = await fetch(layerConfig.styleUrl);
+  if (!response.ok) {
+    throw new Error("無法載入地圖樣式");
+  }
+  const style = await response.json();
+  style.layers = style.layers.filter(
+    (layer) => !BUILDING_SOURCE_LAYERS.has(layer["source-layer"]),
+  );
+  if (layerConfig.useDirectGsiTiles) {
+    Object.values(style.sources).forEach((source) => {
+      if (source.type === "vector") {
+        source.tiles = [GSI_VECTOR_TILE_URL];
+      }
+    });
+  }
+  return style;
+}
+
+async function createPoiPickerVectorLayers() {
+  await loadMapLibre();
+  const results = await Promise.allSettled(
+    POI_PICKER_VECTOR_LAYERS.map(async (layerConfig) => [
+      layerConfig.name,
+      L.maplibreGL({
+        style: await fetchStyleWithoutBuildings(layerConfig),
+        attribution: layerConfig.attribution,
+      }),
+    ]),
+  );
+  return results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
+}
+
 async function openPoiPicker(row) {
   const form = row.closest(".journal-form");
   const popupElement = form.closest(".castle-popup");
@@ -2296,12 +2481,20 @@ async function openPoiPicker(row) {
       attributionControl: true,
       zoomControl: true,
     });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 19,
-    }).addTo(poiPickerState.map);
     poiPickerState.markerLayer = L.layerGroup().addTo(poiPickerState.map);
     poiPickerState.map.on("click", (event) => selectPoiFromMapClick(event.latlng));
+    setPoiPickerStatus("地圖載入中");
+    const vectorLayers = await createPoiPickerVectorLayers().catch(() => []);
+    setPoiPickerStatus("在地圖上點選店家、景點或任一位置");
+    const baseLayers = Object.fromEntries([
+      ...vectorLayers,
+      ...POI_PICKER_BASE_LAYERS.map((layer) => [
+        layer.name,
+        L.tileLayer(layer.url, layer.options),
+      ]),
+    ]);
+    Object.values(baseLayers)[0].addTo(poiPickerState.map);
+    L.control.layers(baseLayers, null, { collapsed: false }).addTo(poiPickerState.map);
   }
 
   poiPickerState.map.setView([castle.latitude, castle.longitude], 15);
@@ -2582,7 +2775,24 @@ document.addEventListener("click", (event) => {
   }
 });
 
+document.addEventListener("input", (event) => {
+  if (
+    event.target.classList.contains("journal-text")
+    && event.target.value.trim()
+  ) {
+    markJournalVisited(event.target.closest(".journal-form"));
+  }
+});
+
 document.addEventListener("keydown", (event) => {
+  if (
+    event.key === "Escape"
+    && document.querySelector(".journal-calendar:not([hidden])")
+  ) {
+    closeJournalCalendars();
+    return;
+  }
+
   const poiPicker = document.querySelector("#poi-picker");
   if (poiPicker && !poiPicker.hidden && event.key === "Escape") {
     closePoiPicker();
@@ -2742,24 +2952,26 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
-  const pickerButton = event.target.closest(".journal-date-picker-button");
-  if (pickerButton) {
-    const datePicker = pickerButton
-      .closest(".journal-date-row")
-      .querySelector(".journal-date-picker");
-    if (!datePicker) {
-      return;
-    }
-
-    if (typeof datePicker.showPicker === "function") {
-      datePicker.showPicker();
-      return;
-    }
-
-    datePicker.focus();
-    datePicker.click();
+  const calendar = event.target.closest(".journal-calendar");
+  if (calendar) {
+    handleJournalCalendarClick(event, calendar);
     return;
   }
+
+  const pickerButton = event.target.closest(".journal-date-picker-button");
+  if (pickerButton) {
+    const form = pickerButton.closest(".journal-form");
+    const formCalendar = form.querySelector(".journal-calendar");
+    closeJournalCalendars(formCalendar);
+    if (formCalendar.hidden) {
+      openJournalCalendar(form);
+    } else {
+      closeJournalCalendars();
+    }
+    return;
+  }
+
+  closeJournalCalendars();
 
   const newDateButton = event.target.closest(".journal-new-date-button");
   if (!newDateButton) {
@@ -2818,16 +3030,23 @@ document.addEventListener("change", (event) => {
         `筆記圖片最多 ${MAX_JOURNAL_IMAGES} 張`
       );
     }
+    if (form.elements.images.files.length > 0) {
+      markJournalVisited(form);
+    }
     syncJournalImagePreview(form);
     return;
   }
 
-  if (event.target.classList.contains("journal-date-picker")) {
-    const form = event.target.closest(".journal-form");
-    const popupElement = event.target.closest(".castle-popup");
-    const castleId = Number(popupElement.dataset.castleId);
-    form.elements.travel_date.value = event.target.value;
-    syncJournalDate(form, castleId, event.target.value);
+  if (
+    event.target.classList.contains("journal-calendar-year")
+    || event.target.classList.contains("journal-calendar-month")
+  ) {
+    const calendar = event.target.closest(".journal-calendar");
+    renderJournalCalendar(
+      calendar,
+      Number(calendar.querySelector(".journal-calendar-year").value),
+      Number(calendar.querySelector(".journal-calendar-month").value),
+    );
     return;
   }
 
@@ -2906,11 +3125,6 @@ logoutButton.addEventListener("click", async () => {
 
 toggleCastleLabelsButton.addEventListener("click", () => {
   mapViewState.showCastleLabels = !mapViewState.showCastleLabels;
-  syncMapViewControls();
-});
-
-toggleRailwayLayerButton.addEventListener("click", () => {
-  mapViewState.showRailwayLayer = !mapViewState.showRailwayLayer;
   syncMapViewControls();
 });
 

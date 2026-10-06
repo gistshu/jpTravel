@@ -492,6 +492,25 @@ body {
   line-height: 1.45;
 }
 
+.journal-side-panel {
+  overflow-x: hidden;
+}
+
+.journal-side-panel .castle-popup,
+.journal-side-panel .journal-form {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.journal-form > *,
+.journal-date-row > *,
+.journal-recommendation-row > *,
+.journal-recommendation-grid > * {
+  min-width: 0;
+}
+
 .journal-side-panel .castle-popup-image {
   max-height: 190px;
 }
@@ -1394,14 +1413,77 @@ a.castle-popup-title:hover {
   content: "";
 }
 
-.journal-date-picker {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 38px;
-  height: 34px;
-  opacity: 0;
-  pointer-events: none;
+.journal-calendar {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 300px;
+  padding: 8px;
+  border: 1px solid rgb(24 32 38 / 18%);
+  background: #fff;
+  box-shadow: 0 8px 22px rgb(24 32 38 / 16%);
+}
+
+.journal-calendar[hidden] {
+  display: none;
+}
+
+.journal-calendar-header {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) minmax(0, 0.8fr) 30px;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.journal-calendar-nav {
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid rgb(24 32 38 / 18%);
+  background: #fff;
+  cursor: pointer;
+  font: 900 18px/1 system-ui, sans-serif;
+}
+
+.journal-calendar-year,
+.journal-calendar-month {
+  min-width: 0;
+  min-height: 30px;
+  font-size: 13px;
+}
+
+.journal-calendar-weekdays,
+.journal-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  text-align: center;
+}
+
+.journal-calendar-weekdays span {
+  font-size: 12px;
+  line-height: 24px;
+}
+
+.journal-calendar-day {
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.journal-calendar-day:hover {
+  border-color: rgb(183 47 53 / 40%);
+}
+
+.journal-calendar-day.is-today {
+  border-color: rgb(24 32 38 / 30%);
+}
+
+.journal-calendar-day.is-selected {
+  background: #b72f35;
+  color: #fff;
 }
 
 .castle-journal-page {
